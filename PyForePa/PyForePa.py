@@ -2,13 +2,27 @@ import numpy as np
 from scipy import stats
 
 
-class PyForePa:
-    def __init__(self, y, season=1):
-        """
-        Creates a PyForePa object.
-        """
-        self.y = np.array(y)
+class tseries:
+    def __init__(self, y, date, season=1):
+        super(tseries, self).__init__()
+        self.y_original = np.array(y, dtype=np.float64)
+        self.date_original = np.array(date)
         self.season = season
+        self.y_transformed = np.array(y, dtype=np.float64)
+
+    @property
+    def date(self):
+        return self.__date
+
+    @date.setter
+    def date(self, v):
+        """
+        Validate that date is datetime object.
+        """
+        if np.issubdtype(v.dtype, np.datetime64):
+            self.__date = v
+        else:
+            raise ValueError('Date must be np.datetime64 object.')
 
     @property
     def season(self):
@@ -22,199 +36,317 @@ class PyForePa:
         if float(v).is_integer() and float(v) > 0:
             self.__season = v
         else:
-            raise ValueError(f'Season must be positive integer.')
+            raise ValueError('Season must be positive integer.')
+
+    def square_root_transformation(self):
+        """
+        Returns square root transformed y.
+        """
+        self.y_transformed = np.sqrt(np.float64(self.y_transformed))
+
+        return self
+
+    def natural_log_transformation(self):
+        """
+        Returns log transformed y.
+        """
+        self.y_transformed = np.log(np.float64(self.y_transformed))
+
+        return self
+
+
+class model(tseries):
+    def __init__(self, y_original, date_original, season, y_transformed):
+        tseries.__init__(
+            self, y_original, date_original, season, y_transformed
+        )
+        super(model, self).__init__()
 
     def mean_forecast(self, h=1, ci=True, level=0.95):
         """
-        Returns a PyForePa.forecast object that holds:
-        1. predicted value of y based on mean forecaster
-        2. lower bound of ci
-        3. upper bound of ci
+        Returns a forecast object based on mean forecaster.
         """
-        j = 1
-        y_train = self.y
-        preds = np.empty([0, 3])
-        sd_diff = np.std(np.diff(y_train))
-        while j <= h:
+        model = 'mean_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+        sd_residuals = np.std(residuals)
+
+        while j <= k:
             pred = np.mean(y_train)
+            y_point = np.vstack((y_point, pred))
             if ci is False:
-                result = np.array([pred, None, None]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = sd_diff * np.sqrt(j)
-                t_crit = stats.t.ppf(q=level, df=(len(y_train) - 1))
-                lb_pred = pred - (t_crit * se_pred)
-                ub_pred = pred + (t_crit * se_pred)
-                result = np.array([pred, lb_pred, ub_pred]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
             y_train = np.append(y_train, pred)
+            i += 1
             j += 1
 
-        preds = PyForePa.forecast(preds)
+        model_info = np.array(
+            [(model, ci, level, h)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8)
+            ]
+        )
 
-        return preds
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
+            self.y_original, self.date_original, self.season,
+            self.y_transformed
+        )
+
+        return forecast_obj
 
     def random_forecast(self, h=1, ci=True, level=0.95):
         """
-        Returns a PyForePa.forecast object that holds:
-        1. predicted value of y based on random forecaster
-        2. lower bound of ci
-        3. upper bound of ci
+        Returns a forecast object based on random forecaster.
         """
-        j = 1
-        y_train = self.y
-        preds = np.empty([0, 3])
-        sd_diff = np.std(np.diff(y_train))
-        while j <= h:
+        model = 'random_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+        sd_residuals = np.std(residuals)
+
+        while j <= k:
             pred = np.random.choice(y_train)
+            y_point = np.vstack((y_point, pred))
             if ci is False:
-                result = np.array([pred, None, None]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = sd_diff * np.sqrt(j)
-                t_crit = stats.t.ppf(q=level, df=(len(y_train) - 1))
-                lb_pred = pred - (t_crit * se_pred)
-                ub_pred = pred + (t_crit * se_pred)
-                result = np.array([pred, lb_pred, ub_pred]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
             y_train = np.append(y_train, pred)
+            i += 1
             j += 1
 
-        preds = PyForePa.forecast(preds)
+        model_info = np.array(
+            [(model, ci, level, h)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8)
+            ]
+        )
 
-        return preds
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
+            self.y_original, self.date_original, self.season,
+            self.y_transformed
+        )
+
+        return forecast_obj
 
     def naive_forecast(self, h=1, ci=True, level=0.95, seasonal=False):
         """
-        Returns a PyForePa.forecast object that holds:
-        1. predicted value of y based on naive forecaster
-        2. lower bound of ci
-        3. upper bound of ci
+        Returns an forecast object based on naive forecaster.
         """
+        model = 'naive_forecast'
+        y_train = self.y_transformed
+        i = 1
         s = np.negative(self.season)
-        j = 1
-        y_train = self.y
-        preds = np.empty([0, 3])
-        rmse_diff = np.sqrt(np.mean(np.diff(y_train)**2))
-        while j <= h:
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+        rmse_residuals = np.sqrt(np.mean(residuals)**2)
+
+        while j <= k:
             if seasonal is True:
                 pred = y_train[s]
             else:
                 pred = y_train[-1]
+            y_point = np.vstack((y_point, pred))
             if ci is False:
-                preds = np.append(preds, pred)
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = rmse_diff * np.sqrt(j)
-                t_crit = stats.t.ppf(q=level, df=(len(y_train) - 1))
-                lb_pred = pred - (t_crit * se_pred)
-                ub_pred = pred + (t_crit * se_pred)
-                result = np.array([pred, lb_pred, ub_pred]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                se_pred = rmse_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
             y_train = np.append(y_train, pred)
+            i += 1
             j += 1
 
-        preds = PyForePa.forecast(preds)
+        model_info = np.array(
+            [(model, ci, level, h, seasonal)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8), ('seasonal', np.int8)
+            ]
+        )
 
-        return preds
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, rmse_residuals,
+            self.y_original, self.date_original, self.season,
+            self.y_transformed
+        )
+
+        return forecast_obj
 
     def drift_forecast(self, h=1, ci=True, level=0.95):
         """
-        Returns a PyForePa.forecast object that holds:
-        1. predicted value of y based on drift forecaster
-        2. lower bound of ci
-        3. upper bound of ci
+        Returns a forecast object based on drift forecaster.
         """
-        j = 1
-        y_train = self.y
-        preds = np.empty([0, 3])
-        sd_diff = np.std(np.diff(y_train))
-        while j <= h:
-            drift = (y_train[-1] - y_train[0]) / (len(y_train) - 1)
+        model = 'drift_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+        sd_residuals = np.std(residuals)
+
+        while j <= k:
+            drift = (y_train[-1] - y_train[0]) / (j - 1)
             pred = y_train[-1] + drift
+            y_point = np.vstack((y_point, pred))
             if ci is False:
-                result = np.array([pred, None, None]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = sd_diff * np.sqrt(j)
-                t_crit = stats.t.ppf(q=level, df=(len(y_train) - 2))
-                lb_pred = pred - (t_crit * se_pred)
-                ub_pred = pred + (t_crit * se_pred)
-                result = np.array([pred, lb_pred, ub_pred]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 2))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
             y_train = np.append(y_train, pred)
+            i += 1
             j += 1
 
-        preds = PyForePa.forecast(preds)
+        model_info = np.array(
+            [(model, ci, level, h)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8)
+            ]
+        )
 
-        return preds
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
+            self.y_original, self.date_original, self.season,
+            self.y_transformed
+        )
 
-    def sma_forecast(self, n_periods, h=1, ci=True, level=0.95):
+        return forecast_obj
+
+    def sma_forecast(self, h=1, ci=True, level=0.95, n_periods=2):
         """
-        Returns a PyForePa.forecast object that holds:
-        1. predicted value of y based on simple moving average forecaster
-        2. lower bound of ci
-        3. upper bound of ci
+        Returns a forecast object base on simple moving average
+        forecaster.
         """
-        j = 1
-        y_train = self.y
-        preds = np.empty([0, 3])
-        sd_diff = np.std(np.diff(y_train))
-        while j <= h:
+        model = 'sma_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+        sd_residuals = np.std(residuals)
+
+        while j <= k:
             pred = np.mean(y_train[-(np.absolute(n_periods)):])
+            y_point = np.vstack((y_point, pred))
             if ci is False:
-                result = np.array([pred, None, None]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = sd_diff * np.sqrt(j)
-                t_crit = stats.t.ppf(q=level, df=(len(y_train) - 1))
-                lb_pred = pred - (t_crit * se_pred)
-                ub_pred = pred + (t_crit * se_pred)
-                result = np.array([pred, lb_pred, ub_pred]).reshape((1, 3))
-                preds = np.vstack((preds, result))
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
             y_train = np.append(y_train, pred)
+            i += 1
             j += 1
 
-        preds = PyForePa.forecast(preds)
+        model_info = np.array(
+            [(model, ci, level, h, n_periods)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8), ('n_periods', np.float64)
+            ]
+        )
 
-        return preds
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
+            self.y_original, self.date_original, self.season,
+            self.y_transformed
+        )
 
-    class forecast:
-        def __init__(self, y_pred):
-            """
-            Creates a forecast object.
-            """
-            self.y_pred = y_pred[:, 0]
-            self.y_pred_lb = y_pred[:, 1]
-            self.y_pred_ub = y_pred[:, 2]
+        return forecast_obj
 
-        def mean_error(self, y_true):
-            """
-            Returns mean error of forecast.
-            """
-            me = np.mean(self.y_pred - y_true)
 
-            return me
+class forecast:
+    def __init__(
+        self, model_info=None, y_point=None, y_lb=None, y_ub=None,
+        residuals=None, residuals_spread=None, y_original=None,
+        date_original=None, season=None, y_transformed=None
+    ):
+        super(forecast, self).__init__()
+        self.model_info = model_info
+        self.y_point = y_point
+        self.y_lb = y_lb
+        self.y_ub = y_ub
+        self.residuals = residuals
+        self.residuals_spread = residuals_spread
+        self.y_original = y_original
+        self.date_original = date_original
+        self.season = season
+        self.y_transformed = y_transformed
 
-        def root_mean_squared_error(self, y_true):
-            """
-            Returns root mean squared error of forecast.
-            """
-            rmse = np.sqrt(((self.y_pred - y_true) ** 2).mean())
+    def accuracy(self, y_true):
+        """
+        Returns structured Numpy array of accuracy measures.
+        """
+        if len(self.y_point) != len(y_true):
+            raise Exception('Length of y_point and y_true must be the same.')
+        else:
+            pass
 
-            return rmse
+        me = np.mean(self.y_point - y_true)
+        rmse = np.sqrt(((self.y_point - y_true) ** 2).mean())
+        mae = np.mean(np.absolute(self.y_point - y_true))
+        mse = np.mean((self.y_point - y_true) ** 2)
 
-        def mean_absolute_error(self, y_true):
-            """
-            Returns mean absolute error of forecast.
-            """
-            mae = np.mean(np.absolute(self.y_pred - y_true))
+        accuracy_measures = np.array(
+            [(me, rmse, mae, mse)],
+            dtype=[
+                ('ME', np.float64), ('RMSE', np.float64), ('MAE', np.float64),
+                ('MSE', np.float64)
+            ]
+        )
 
-            return mae
-
-        def mean_squared_error(self, y_true):
-            """
-            Returns mean squared error of forecast.
-            """
-            mse = np.mean((self.y_pred - y_true) ** 2)
-
-            return mse
+        return accuracy_measures
