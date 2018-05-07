@@ -2,8 +2,6 @@
 Beginnings of a package to generate forecasts and measure their accuracy with a few lines of code. Starting at the most basic.
 
 ## Usage ##
-![README Notebook](https://github.com/jdee-smith/PyForePa/blob/master/PyForePa/PyForePa-readme-1.png)
-
 See notebooks for examples.
 
 ## Dependencies ##

@@ -2,6 +2,25 @@ import numpy as np
 from scipy import stats
 
 
+def boot_sd_residuals(data, n_samples):
+    """
+    Returns bootstrapped standard deviation of the residuals.
+    """
+    sample_num = 1
+    sd_residuals_array = np.empty([0, 1])
+
+    while sample_num <= n_samples:
+        sample = np.random.choice(data, len(data))
+        residuals = np.diff(sample)
+        residuals_sd = np.std(residuals)
+        sd_residuals_array = np.vstack((sd_residuals_array, residuals_sd))
+        sample_num += 1
+
+    bootstrap_sd_residuals = np.mean(sd_residuals_array)
+
+    return bootstrap_sd_residuals
+
+
 class tseries:
     def __init__(self, y, date, season=1):
         super(tseries, self).__init__()
@@ -62,7 +81,9 @@ class model(tseries):
         )
         super(model, self).__init__()
 
-    def mean_forecast(self, h=1, ci=True, level=0.95):
+    def mean_forecast(
+            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+    ):
         """
         Returns a forecast object based on mean forecaster.
         """
@@ -75,7 +96,11 @@ class model(tseries):
         y_lb = np.empty([0, 1])
         y_ub = np.empty([0, 1])
         residuals = np.diff(y_train)
-        sd_residuals = np.std(residuals)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
             pred = np.mean(y_train)
@@ -95,22 +120,23 @@ class model(tseries):
             j += 1
 
         model_info = np.array(
-            [(model, ci, level, h)],
+            [(model, ci, level, h, bootstrap, n_samples)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-                ('h', np.int8)
+                ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
             ]
         )
 
         forecast_obj = forecast(
-            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
-            self.y_original, self.date_original, self.season,
-            self.y_transformed
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
         )
 
         return forecast_obj
 
-    def random_forecast(self, h=1, ci=True, level=0.95):
+    def random_forecast(
+            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+    ):
         """
         Returns a forecast object based on random forecaster.
         """
@@ -123,7 +149,11 @@ class model(tseries):
         y_lb = np.empty([0, 1])
         y_ub = np.empty([0, 1])
         residuals = np.diff(y_train)
-        sd_residuals = np.std(residuals)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
             pred = np.random.choice(y_train)
@@ -143,22 +173,24 @@ class model(tseries):
             j += 1
 
         model_info = np.array(
-            [(model, ci, level, h)],
+            [(model, ci, level, h, bootstrap, n_samples)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-                ('h', np.int8)
+                ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
             ]
         )
 
         forecast_obj = forecast(
-            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
-            self.y_original, self.date_original, self.season,
-            self.y_transformed
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
         )
 
         return forecast_obj
 
-    def naive_forecast(self, h=1, ci=True, level=0.95, seasonal=False):
+    def naive_forecast(
+            self, h=1, ci=True, level=0.95, seasonal=False, bootstrap=False,
+            n_samples=500
+    ):
         """
         Returns an forecast object based on naive forecaster.
         """
@@ -172,7 +204,11 @@ class model(tseries):
         y_lb = np.empty([0, 1])
         y_ub = np.empty([0, 1])
         residuals = np.diff(y_train)
-        rmse_residuals = np.sqrt(np.mean(residuals)**2)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
             if seasonal is True:
@@ -184,7 +220,7 @@ class model(tseries):
                 y_lb = np.vstack((y_lb, np.nan))
                 y_ub = np.vstack((y_ub, np.nan))
             else:
-                se_pred = rmse_residuals * np.sqrt(i)
+                se_pred = sd_residuals * np.sqrt(i)
                 t_crit = stats.t.ppf(q=level, df=(j - 1))
                 pred_lb = pred - (t_crit * se_pred)
                 pred_ub = pred + (t_crit * se_pred)
@@ -195,22 +231,24 @@ class model(tseries):
             j += 1
 
         model_info = np.array(
-            [(model, ci, level, h, seasonal)],
+            [(model, ci, level, h, seasonal, bootstrap, n_samples)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-                ('h', np.int8), ('seasonal', np.int8)
+                ('h', np.int8), ('seasonal', np.int8), ('bootstrap', 'S10'),
+                ('n_samples', np.float64)
             ]
         )
 
         forecast_obj = forecast(
-            model_info, y_point, y_lb, y_ub, residuals, rmse_residuals,
-            self.y_original, self.date_original, self.season,
-            self.y_transformed
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
         )
 
         return forecast_obj
 
-    def drift_forecast(self, h=1, ci=True, level=0.95):
+    def drift_forecast(
+            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+    ):
         """
         Returns a forecast object based on drift forecaster.
         """
@@ -223,7 +261,11 @@ class model(tseries):
         y_lb = np.empty([0, 1])
         y_ub = np.empty([0, 1])
         residuals = np.diff(y_train)
-        sd_residuals = np.std(residuals)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
             drift = (y_train[-1] - y_train[0]) / (j - 1)
@@ -244,22 +286,24 @@ class model(tseries):
             j += 1
 
         model_info = np.array(
-            [(model, ci, level, h)],
+            [(model, ci, level, h, bootstrap, n_samples)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-                ('h', np.int8)
+                ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
             ]
         )
 
         forecast_obj = forecast(
-            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
-            self.y_original, self.date_original, self.season,
-            self.y_transformed
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
         )
 
         return forecast_obj
 
-    def sma_forecast(self, h=1, ci=True, level=0.95, n_periods=2):
+    def sma_forecast(
+            self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
+            n_samples=500
+    ):
         """
         Returns a forecast object base on simple moving average
         forecaster.
@@ -273,7 +317,11 @@ class model(tseries):
         y_lb = np.empty([0, 1])
         y_ub = np.empty([0, 1])
         residuals = np.diff(y_train)
-        sd_residuals = np.std(residuals)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
             pred = np.mean(y_train[-(np.absolute(n_periods)):])
@@ -296,14 +344,14 @@ class model(tseries):
             [(model, ci, level, h, n_periods)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-                ('h', np.int8), ('n_periods', np.float64)
+                ('h', np.int8), ('n_periods', np.float64),
+                ('bootstrap', 'S10'), ('n_samples', np.float64)
             ]
         )
 
         forecast_obj = forecast(
-            model_info, y_point, y_lb, y_ub, residuals, sd_residuals,
-            self.y_original, self.date_original, self.season,
-            self.y_transformed
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
         )
 
         return forecast_obj
@@ -312,8 +360,8 @@ class model(tseries):
 class forecast:
     def __init__(
         self, model_info=None, y_point=None, y_lb=None, y_ub=None,
-        residuals=None, residuals_spread=None, y_original=None,
-        date_original=None, season=None, y_transformed=None
+        residuals=None, y_original=None, date_original=None, season=None,
+        y_transformed=None
     ):
         super(forecast, self).__init__()
         self.model_info = model_info
@@ -321,7 +369,6 @@ class forecast:
         self.y_lb = y_lb
         self.y_ub = y_ub
         self.residuals = residuals
-        self.residuals_spread = residuals_spread
         self.y_original = y_original
         self.date_original = date_original
         self.season = season
@@ -350,3 +397,10 @@ class forecast:
         )
 
         return accuracy_measures
+
+
+data = tseries(np.array([1, 2, 2, 5, 1, 5, 4, 8, 4, 8]), np.arange(10))
+results = model.mean_forecast(data, h=4, bootstrap=True)
+results.y_lb, results.y_point, results.y_ub
+results2 = model.mean_forecast(data, h=4, bootstrap=False)
+model.naive_forecast(data, h=10, bootstrap=True).y_ub
