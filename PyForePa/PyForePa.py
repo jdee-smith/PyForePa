@@ -82,7 +82,7 @@ class model(tseries):
         super(model, self).__init__()
 
     def mean_forecast(
-            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+        self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
     ):
         """
         Returns a forecast object based on mean forecaster.
@@ -135,7 +135,7 @@ class model(tseries):
         return forecast_obj
 
     def random_forecast(
-            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+        self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
     ):
         """
         Returns a forecast object based on random forecaster.
@@ -188,8 +188,8 @@ class model(tseries):
         return forecast_obj
 
     def naive_forecast(
-            self, h=1, ci=True, level=0.95, seasonal=False, bootstrap=False,
-            n_samples=500
+        self, h=1, ci=True, level=0.95, seasonal=False, bootstrap=False,
+        n_samples=500
     ):
         """
         Returns an forecast object based on naive forecaster.
@@ -247,7 +247,7 @@ class model(tseries):
         return forecast_obj
 
     def drift_forecast(
-            self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
+        self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
     ):
         """
         Returns a forecast object based on drift forecaster.
@@ -301,11 +301,11 @@ class model(tseries):
         return forecast_obj
 
     def sma_forecast(
-            self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
-            n_samples=500
+        self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
+        n_samples=500
     ):
         """
-        Returns a forecast object base on simple moving average
+        Returns a forecast object based on simple moving average
         forecaster.
         """
         model = 'sma_forecast'
@@ -341,11 +341,132 @@ class model(tseries):
             j += 1
 
         model_info = np.array(
-            [(model, ci, level, h, n_periods)],
+            [(model, ci, level, h, n_periods, bootstrap, n_samples)],
             dtype=[
                 ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
                 ('h', np.int8), ('n_periods', np.float64),
                 ('bootstrap', 'S10'), ('n_samples', np.float64)
+            ]
+        )
+
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
+        )
+
+        return forecast_obj
+
+    def ema_forecast(
+        self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
+        n_samples=500
+    ):
+        """
+        Returns a forecast object based on exponential moving average
+        forecaster.
+        """
+        model = 'ema_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+
+        weights = np.exp(np.linspace(-1, 0, n_periods))
+        weights /= np.sum(weights)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
+
+        while j <= k:
+            pred = np.sum(
+                y_train[np.negative(np.absolute(n_periods)):] * weights)
+            y_point = np.vstack((y_point, pred))
+            if ci is False:
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
+            else:
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
+            y_train = np.append(y_train, pred)
+            i += 1
+            j += 1
+
+        model_info = np.array(
+            [(model, ci, level, h, n_periods, bootstrap, n_samples)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8), ('n_periods', np.float64),
+                ('bootstrap', 'S10'), ('n_samples', np.float64)
+            ]
+        )
+
+        forecast_obj = forecast(
+            model_info, y_point, y_lb, y_ub, residuals, self.y_original,
+            self.date_original, self.season, self.y_transformed
+        )
+
+        return forecast_obj
+
+    def wma_forecast(
+        self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500,
+        weights=[0.5, 0.5]
+    ):
+        """
+        Returns a forecast object based on weighted moving average
+        forecaster.
+        """
+        model = 'wma_forecast'
+        y_train = self.y_transformed
+        i = 1
+        j = len(y_train)
+        k = j + (h - 1)
+        y_point = np.empty([0, 1])
+        y_lb = np.empty([0, 1])
+        y_ub = np.empty([0, 1])
+        residuals = np.diff(y_train)
+
+        n_periods = len(weights)
+        weights = np.array(weights)
+
+        if bootstrap is False:
+            sd_residuals = np.std(residuals)
+        else:
+            sd_residuals = boot_sd_residuals(y_train, n_samples)
+
+        while j <= k:
+            pred = np.sum(
+                y_train[np.negative(n_periods):] * weights)
+            y_point = np.vstack((y_point, pred))
+            if ci is False:
+                y_lb = np.vstack((y_lb, np.nan))
+                y_ub = np.vstack((y_ub, np.nan))
+            else:
+                se_pred = sd_residuals * np.sqrt(i)
+                t_crit = stats.t.ppf(q=level, df=(j - 1))
+                pred_lb = pred - (t_crit * se_pred)
+                pred_ub = pred + (t_crit * se_pred)
+                y_lb = np.vstack((y_lb, pred_lb))
+                y_ub = np.vstack((y_ub, pred_ub))
+            y_train = np.append(y_train, pred)
+            i += 1
+            j += 1
+
+        model_info = np.array(
+            [(model, ci, level, h, n_periods, bootstrap, n_samples, weights)],
+            dtype=[
+                ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
+                ('h', np.int8), ('n_periods', np.float64),
+                ('bootstrap', 'S10'), ('n_samples', np.float64),
+                ('weights', object)
             ]
         )
 
@@ -403,4 +524,5 @@ data = tseries(np.array([1, 2, 2, 5, 1, 5, 4, 8, 4, 8]), np.arange(10))
 results = model.mean_forecast(data, h=4, bootstrap=True)
 results.y_lb, results.y_point, results.y_ub
 results2 = model.mean_forecast(data, h=4, bootstrap=False)
-model.naive_forecast(data, h=10, bootstrap=True).y_ub
+model.naive_forecast(data, h=10, bootstrap=True).y_lb
+model.wma_forecast(data, h=2).y_point
