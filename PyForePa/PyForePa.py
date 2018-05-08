@@ -443,8 +443,7 @@ class model(tseries):
             sd_residuals = boot_sd_residuals(y_train, n_samples)
 
         while j <= k:
-            pred = np.sum(
-                y_train[np.negative(n_periods):] * weights)
+            pred = np.sum(y_train[np.negative(n_periods):] * weights)
             y_point = np.vstack((y_point, pred))
             if ci is False:
                 y_lb = np.vstack((y_lb, np.nan))
@@ -499,30 +498,30 @@ class forecast:
         """
         Returns structured Numpy array of accuracy measures.
         """
+
         if len(self.y_point) != len(y_true):
             raise Exception('Length of y_point and y_true must be the same.')
         else:
             pass
 
         me = np.mean(self.y_point - y_true)
-        rmse = np.sqrt(((self.y_point - y_true) ** 2).mean())
+        rmse = np.sqrt(np.mean((self.y_point - y_true) ** 2))
         mae = np.mean(np.absolute(self.y_point - y_true))
         mse = np.mean((self.y_point - y_true) ** 2)
+        mape = np.mean(np.absolute(((self.y_point - y_true) / y_true) * 100))
+        smape = np.mean(np.absolute(self.y_point - y_true) /
+                        (self.y_point + y_true) * 200)
+        mdae = np.median(np.absolute(self.y_point - y_true))
+        mmr = mae / np.mean(self.y_point)
 
         accuracy_measures = np.array(
-            [(me, rmse, mae, mse)],
+            [(me, rmse, mae, mse, mape, smape, mdae, mmr)],
             dtype=[
                 ('ME', np.float64), ('RMSE', np.float64), ('MAE', np.float64),
-                ('MSE', np.float64)
+                ('MSE', np.float64), ('MAPE', np.float64),
+                ('SMAPE', np.float64), ('MDAE', np.float64),
+                ('MMR', np.float64)
             ]
         )
 
         return accuracy_measures
-
-
-data = tseries(np.array([1, 2, 2, 5, 1, 5, 4, 8, 4, 8]), np.arange(10))
-results = model.mean_forecast(data, h=4, bootstrap=True)
-results.y_lb, results.y_point, results.y_ub
-results2 = model.mean_forecast(data, h=4, bootstrap=False)
-model.naive_forecast(data, h=10, bootstrap=True).y_lb
-model.wma_forecast(data, h=2).y_point
