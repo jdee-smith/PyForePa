@@ -494,34 +494,101 @@ class forecast:
         self.season = season
         self.y_transformed = y_transformed
 
-    def accuracy(self, y_true):
+    def accuracy(self, measure, y_true):
         """
-        Returns structured Numpy array of accuracy measures.
+        Returns array of accuracy measurements in the order they are listed
+        in measure argument.
         """
+
+        def mean_error():
+            """
+            Returns mean error of forecast.
+            """
+            error = self.y_point - y_true
+            me = np.mean(error)
+
+            return me
+
+        def root_mean_squared_error():
+            """
+            Returns root_mean_squared_error of forecast.
+            """
+            error = self.y_point - y_true
+            rmse = np.sqrt(np.mean((error) ** 2))
+
+            return rmse
+
+        def mean_absolute_error():
+            """
+            Returns mean absolute error of forecast.
+            """
+            error = self.y_point - y_true
+            mae = np.mean(np.absolute(error))
+
+            return mae
+
+        def mean_squared_error():
+            """
+            Returns mean squared error of forecast.
+            """
+            error = self.y_point - y_true
+            mse = np.mean((error) ** 2)
+
+            return mse
+
+        def mean_absolute_percentage_error():
+            """
+            Returns mean absolute percentage error of forecast.
+            """
+            error = self.y_point - y_true
+            mape = np.mean(np.absolute(((error) / y_true) * 100))
+
+            return mape
+
+        def symmetric_mean_absolute_percentage_error():
+            """
+            Returns symmetric mean absolute percentage error of forecast.
+            """
+            error = self.y_point - y_true
+            smape = np.mean(np.absolute(error) / (self.y_point + y_true) * 200)
+
+            return smape
+
+        def median_absolute_error():
+            """
+            Returns median absolute error of forecast.
+            """
+            error = self.y_point - y_true
+            mdae = np.median(np.absolute(error))
+
+            return mdae
+
+        def mad_mean_ratio():
+            """
+            Returns mad mean ratio of forecast.
+            """
+            error = self.y_point - y_true
+            mmr = np.mean(np.absolute(error)) / np.mean(self.y_point)
+
+            return mmr
 
         if len(self.y_point) != len(y_true):
             raise Exception('Length of y_point and y_true must be the same.')
         else:
-            pass
+            measure_dict = {
+                'mean_error': mean_error(),
+                'root_mean_squared_error': root_mean_squared_error(),
+                'mean_absolute_error': mean_absolute_error(),
+                'mean_squared_error': mean_squared_error(),
+                'mean_absolute_percentage_error': mean_absolute_percentage_error(),
+                'symmetric_mean_absolute_percentage_error': symmetric_mean_absolute_percentage_error(),
+                'median_absolute_error': median_absolute_error(),
+                'mad_mean_ratio': mad_mean_ratio()
+            }
 
-        me = np.mean(self.y_point - y_true)
-        rmse = np.sqrt(np.mean((self.y_point - y_true) ** 2))
-        mae = np.mean(np.absolute(self.y_point - y_true))
-        mse = np.mean((self.y_point - y_true) ** 2)
-        mape = np.mean(np.absolute(((self.y_point - y_true) / y_true) * 100))
-        smape = np.mean(np.absolute(self.y_point - y_true) /
-                        (self.y_point + y_true) * 200)
-        mdae = np.median(np.absolute(self.y_point - y_true))
-        mmr = mae / np.mean(self.y_point)
+            measurements = np.empty([0, 1])
+            for i in measure:
+                measurement = measure_dict[i]
+                measurements = np.vstack((measurements, measurement))
 
-        accuracy_measures = np.array(
-            [(me, rmse, mae, mse, mape, smape, mdae, mmr)],
-            dtype=[
-                ('ME', np.float64), ('RMSE', np.float64), ('MAE', np.float64),
-                ('MSE', np.float64), ('MAPE', np.float64),
-                ('SMAPE', np.float64), ('MDAE', np.float64),
-                ('MMR', np.float64)
-            ]
-        )
-
-        return accuracy_measures
+            return measurements
