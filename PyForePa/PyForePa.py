@@ -57,6 +57,109 @@ class tseries:
         else:
             raise ValueError('Season must be positive integer.')
 
+    def impute_missing(self, how, replacement=None):
+        """
+        Returns tseries object with missing values of the series filled by
+        the method specified in the "how" argument.
+        """
+        def mean():
+            """
+            Returns tseries object with missing values of the series filled
+            with the mean up to that point.
+            """
+            for idx, value in enumerate(self.y_transformed, 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[idx] = np.mean(self.y_transformed[:idx])
+
+            return self
+
+        def median():
+            """
+            Returns tseries object with missing values of the series filled
+            with the median up to that point.
+            """
+            for idx, value in enumerate(self.y_transformed, 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[idx] = np.median(
+                        self.y_transformed[:idx])
+
+            return self
+
+        def random():
+            """
+            Returns tseries object with missing values of the series filled
+            with a random number from the series up to that point.
+            """
+            for idx, value in enumerate(self.y_transformed, 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[idx] = np.random.choice(
+                        self.y_transformed[:idx])
+
+            return self
+
+        def value():
+            """
+            Returns tseries object with missing values of the series filled
+            with a specific value.
+            """
+            for idx, value in enumerate(self.y_transformed, 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[idx] = replacement
+
+            return self
+
+        def last_observation_carried_forward():
+            """
+            Returns tseries object with missing values of the series filled
+            with the most recent non-missing value.
+            """
+            for idx, value in enumerate(self.y_transformed, 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[idx] = self.y_transformed[:idx][0]
+
+            return self
+
+        def next_observation_carried_backward():
+            """
+            Returns tseries object with missing values of the series filled
+            with the next non-missing value.
+            """
+            for idx, value in enumerate(self.y_transformed[::-1], 0):
+                if np.isnan(value) == True:
+                    self.y_transformed[::-1][idx] = (
+                        self.y_transformed[::-1][:idx][-1]
+                    )
+
+            return self
+
+        def linear_interpolation():
+            """
+            Returns tseries object with missing values of the series filled
+            via linear interpolation.
+            """
+            mask = np.logical_not(np.isnan(self.y_transformed))
+            self.y_transformed = np.interp(
+                np.arange(len(self.y_transformed)),
+                np.arange(len(self.y_transformed))[mask],
+                self.y_transformed[mask]
+            )
+
+            return self
+
+        imputation_dict = {
+            'mean': mean,
+            'median': median,
+            'random': random,
+            'value': value,
+            'locf': last_observation_carried_forward,
+            'nocb': next_observation_carried_backward,
+            'linear_interpolation': linear_interpolation
+        }
+
+        tseries_obj = imputation_dict[how]()
+
+        return tseries_obj
+
     def square_root_transformation(self):
         """
         Returns square root transformed y.
@@ -494,7 +597,7 @@ class forecast:
         self.season = season
         self.y_transformed = y_transformed
 
-    def accuracy(self, measure, y_true):
+    def accuracy(self, y_true, how):
         """
         Returns array of accuracy measurements in the order they are listed
         in measure argument.
@@ -576,19 +679,26 @@ class forecast:
             raise Exception('Length of y_point and y_true must be the same.')
         else:
             measure_dict = {
-                'mean_error': mean_error(),
-                'root_mean_squared_error': root_mean_squared_error(),
-                'mean_absolute_error': mean_absolute_error(),
-                'mean_squared_error': mean_squared_error(),
-                'mean_absolute_percentage_error': mean_absolute_percentage_error(),
-                'symmetric_mean_absolute_percentage_error': symmetric_mean_absolute_percentage_error(),
-                'median_absolute_error': median_absolute_error(),
-                'mad_mean_ratio': mad_mean_ratio()
+                'ME': mean_error,
+                'RMSE': root_mean_squared_error,
+                'MAE': mean_absolute_error,
+                'MSE': mean_squared_error,
+                'MAPE': mean_absolute_percentage_error,
+                'SMAPE': symmetric_mean_absolute_percentage_error,
+                'MDAE': median_absolute_error,
+                'MMR': mad_mean_ratio
             }
 
             measurements = np.empty([0, 1])
-            for i in measure:
-                measurement = measure_dict[i]
+            for i in how:
+                measurement = measure_dict[i]()
                 measurements = np.vstack((measurements, measurement))
 
             return measurements
+
+
+data = np.array([1, 2, 3, np.nan, 5, 6, 7, 8, np.nan, 10])
+date = np.arange(10)
+tseries(data, date).impute_missing('value', 3).y_transformed
+model.naive_forecast(tseries(data, data).impute_missing(
+    'random')).accuracy([0], ['RMSE'])
