@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def accuracy_me(self, y_true):
     """
     Returns mean error of forecast.
@@ -8,6 +9,7 @@ def accuracy_me(self, y_true):
     me = np.mean(error)
 
     return me
+
 
 def accuracy_rmse(self, y_true):
     """
@@ -18,6 +20,7 @@ def accuracy_rmse(self, y_true):
 
     return rmse
 
+
 def accuracy_mae(self, y_true):
     """
     Returns mean absolute error of forecast.
@@ -26,6 +29,7 @@ def accuracy_mae(self, y_true):
     mae = np.mean(np.absolute(error))
 
     return mae
+
 
 def accuracy_mse(self, y_true):
     """
@@ -36,6 +40,7 @@ def accuracy_mse(self, y_true):
 
     return mse
 
+
 def accuracy_mape(self, y_true):
     """
     Returns mean absolute percentage error of forecast.
@@ -44,6 +49,7 @@ def accuracy_mape(self, y_true):
     mape = np.mean(np.absolute(((error) / y_true) * 100))
 
     return mape
+
 
 def accuracy_smape(self, y_true):
     """
@@ -54,6 +60,7 @@ def accuracy_smape(self, y_true):
 
     return smape
 
+
 def accuracy_mdae(self, y_true):
     """
     Returns median absolute error of forecast.
@@ -63,6 +70,7 @@ def accuracy_mdae(self, y_true):
 
     return mdae
 
+
 def accuracy_mmr(self, y_true):
     """
     Returns mad mean ratio of forecast.
@@ -71,6 +79,7 @@ def accuracy_mmr(self, y_true):
     mmr = np.mean(np.absolute(error)) / np.mean(self.y_point)
 
     return mmr
+
 
 def accuracy(self, y_true, how):
     """

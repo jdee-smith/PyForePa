@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def boot_sd_residuals(data, n_samples):
     """
     Returns bootstrapped standard deviation of the residuals.

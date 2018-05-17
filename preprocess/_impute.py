@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def impute_mean(self):
     """
     Returns tseries object with missing values of the series filled
@@ -10,6 +11,7 @@ def impute_mean(self):
             self.y_transformed[idx] = np.mean(self.y_transformed[:idx])
 
     return self
+
 
 def impute_median(self):
     """
@@ -23,6 +25,7 @@ def impute_median(self):
 
     return self
 
+
 def impute_random(self):
     """
     Returns tseries object with missing values of the series filled
@@ -35,7 +38,8 @@ def impute_random(self):
 
     return self
 
-def impute_value(self):
+
+def impute_value(self, replacement):
     """
     Returns tseries object with missing values of the series filled
     with a specific value.
@@ -45,6 +49,7 @@ def impute_value(self):
             self.y_transformed[idx] = replacement
 
     return self
+
 
 def impute_locf(self):
     """
@@ -57,7 +62,8 @@ def impute_locf(self):
 
     return self
 
-def impute_nocb():
+
+def impute_nocb(self):
     """
     Returns tseries object with missing values of the series filled
     with the next non-missing value.
@@ -69,6 +75,7 @@ def impute_nocb():
             )
 
     return self
+
 
 def impute_linear_interp(self):
     """
@@ -83,6 +90,7 @@ def impute_linear_interp(self):
     )
 
     return self
+
 
 def impute(self, how, replacement=None):
     """
@@ -99,6 +107,6 @@ def impute(self, how, replacement=None):
         'linear_interpolation': impute_linear_interp
     }
 
-    tseries_obj = imputation_dict[how](self)
+    tseries_obj = imputation_dict[how](self, replacement)
 
     return tseries_obj

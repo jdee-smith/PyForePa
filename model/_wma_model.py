@@ -5,6 +5,7 @@ from scipy import stats
 from postprocess import forecast
 from ._model_helpers import boot_sd_residuals
 
+
 def wma_model(
     self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500,
     weights=[0.5, 0.5]

@@ -5,9 +5,10 @@ from scipy import stats
 from postprocess import forecast
 from ._model_helpers import boot_sd_residuals
 
+
 def ema_model(
-    self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
-    n_samples=500
+        self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
+        n_samples=500
 ):
     """
     Returns a forecast object based on exponential moving average

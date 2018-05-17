@@ -5,6 +5,7 @@ from scipy import stats
 from postprocess import forecast
 from ._model_helpers import boot_sd_residuals
 
+
 def naive_model(
     self, h=1, ci=True, level=0.95, seasonal=False, bootstrap=False,
     n_samples=500

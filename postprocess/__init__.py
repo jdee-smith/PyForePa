@@ -18,8 +18,7 @@ class forecast:
         self.season = season
         self.y_transformed = y_transformed
 
-    
     from ._accuracy import (
-    	accuracy_me, accuracy_rmse, accuracy_mae, accuracy_mse, accuracy_mape,
-    	accuracy_smape, accuracy_mdae, accuracy_mmr, accuracy
+        accuracy_me, accuracy_rmse, accuracy_mae, accuracy_mse, accuracy_mape,
+        accuracy_smape, accuracy_mdae, accuracy_mmr, accuracy
     )

@@ -37,9 +37,9 @@ class tseries(object):
         else:
             raise ValueError('Season must be positive integer.')
 
-    
     from ._impute import (
         impute_mean, impute_median, impute_random, impute_value, impute_locf,
         impute_nocb, impute_linear_interp, impute
     )
     from ._transform import transform_square_root, transform_natural_log
+    from ._plot import plot_series
