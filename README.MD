@@ -13,10 +13,8 @@ This project is licensed under the MIT License - see [LICENSE.md](http://www.git
 
 ## To-Do
   * A lot More of *EVERYTHING*
+	  * Transformations
       * Accuracy measures
+	  * Pre and Post plots
       * Models
-    	  * first up
-        	  * exponential weight
-        	  * custom weight
-      * Transformations
   * Ensemble
