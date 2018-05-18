@@ -5,6 +5,7 @@ Beginnings of a package to generate forecasts and measure their accuracy with a 
 See notebooks for examples.
 
 ## Dependencies ##
+  * [Matplotlib](http://www.matplotlib.org)
   * [NumPy](http://www.numpy.org)
   * [SciPy](http://www.scipy.org)
   
@@ -15,6 +16,6 @@ This project is licensed under the MIT License - see [LICENSE.md](http://www.git
   * A lot More of *EVERYTHING*
 	  * Transformations
       * Accuracy measures
-	  * Pre and Post plots
+	  * Pre- and Post- plots
       * Models
   * Ensemble

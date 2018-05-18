@@ -20,8 +20,7 @@ def impute_median(self):
     """
     for idx, value in enumerate(self.y_transformed, 0):
         if np.isnan(value) == True:
-            self.y_transformed[idx] = np.median(
-                self.y_transformed[:idx])
+            self.y_transformed[idx] = np.median(self.y_transformed[:idx])
 
     return self
 

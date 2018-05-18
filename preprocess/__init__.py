@@ -42,4 +42,6 @@ class tseries(object):
         impute_nocb, impute_linear_interp, impute
     )
     from ._transform import transform_square_root, transform_natural_log
-    from ._plot import plot_series
+    from ._plot import (
+        plot_series, plot_original_series, plot_transformed_series, plot_acf
+    )
