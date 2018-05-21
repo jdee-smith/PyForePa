@@ -43,5 +43,5 @@ class tseries(object):
     )
     from ._transform import transform_square_root, transform_natural_log
     from ._plot import (
-        plot_series, plot_original_series, plot_transformed_series, plot_acf
+        plot_series, plot_series_original, plot_series_transformed
     )

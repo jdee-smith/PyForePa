@@ -3,7 +3,7 @@ import numpy as np
 from scipy import stats
 
 from postprocess import forecast
-from ._model_helpers import boot_sd_residuals
+from helpers._helpers import boot_sd_residuals
 
 
 def random_model(
