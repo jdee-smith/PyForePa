@@ -1,60 +1,112 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
-def plot_series(self, **kwargs):
-    """
-    Plots original and transformed series.
-    """
-    f, (ax1, ax2) = plt.subplots(2, 1, sharey=False, sharex=True)
-
-    plt.suptitle(kwargs.get('title_main', 'Original and Transformed Series'))
-    plt.xlabel(kwargs.get('x_label', 'Index'))
-
-    ax1.plot(
-        self.date_original,
-        self.y_original,
-        color=kwargs.get('color_1', 'c'),
-        linewidth=kwargs.get('linewidth_1', 1)
-    )
-    ax1.set_title(kwargs.get('title_1', ''))
-    ax1.set_ylabel(kwargs.get('y_label_1', 'Y'))
-
-    ax2.plot(
-        self.date_original,
-        self.y_transformed,
-        color=kwargs.get('color_2', 'm'),
-        linewidth=kwargs.get('linewidth_2', 1)
-    )
-    ax2.set_title(kwargs.get('title_2', ''))
-    ax2.set_ylabel(kwargs.get('y_label_2', 'Y'))
-    
-    return f
+from helpers._helpers import (
+    acf, decompose_trend, decompose_detrend,
+    decompose_seasonality, decompose_remainder
+)
 
 
-def plot_series_original(self, **kwargs):
+def plot_series_original(
+    self, title='Original Series', x_lab='Index', y_lab='Y', **kwargs
+):
     """
     Plots original series.
     """
-    plt.plot(
-        self.date_original,
-        self.y_original,
-        color=kwargs.get('color', 'c'),
-        linewidth=kwargs.get('linewidth', 1),
-    )
-    plt.title(kwargs.get('title', 'Original Series'))
-    plt.ylabel(kwargs.get('y_label', 'Y'))
-    plt.xlabel(kwargs.get('x_label', 'Index'))
+    plt.plot(self.date_original, self.y_original, **kwargs)
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
 
 
-def plot_series_transformed(self, **kwargs):
+def plot_series_transformed(
+    self, title='Transformed Series', x_lab='Index', y_lab='Y', **kwargs
+):
     """
     Plots transformed series.
     """
-    plt.plot(
-        self.date_original,
-        self.y_transformed,
-        color=kwargs.get('color', 'c'),
-        linewidth=kwargs.get('linewidth', 1)
+    plt.plot(self.date_original, self.y_transformed, **kwargs)
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
+    
+
+def plot_acf(
+    self, max_lags='default', level=0.95, title='ACF', x_lab='Lag',
+    y_lab='ACF', **kwargs
+):
+    """
+    Plots autocorrelation function of series up to max_lags.
+    """
+    res = acf(data=self.y_transformed, max_lags=max_lags, ci=True, level=level)
+    coeffs = res[:,1]
+    coeffs_lb = res[0][0]
+    coeffs_ub = res[0][2]
+    x = np.arange(len(coeffs))
+    
+    plt.stem(x, coeffs, **kwargs)
+    plt.hlines(
+        (coeffs_lb, coeffs_ub),
+        xmin=x[0], 
+        xmax=x[-1], 
+        linestyles=kwargs.pop('linestyles', 'dotted'), 
+        **kwargs
     )
-    plt.title(kwargs.get('title', 'Transformed Series'))
-    plt.ylabel(kwargs.get('y_label', 'Y'))
-    plt.xlabel(kwargs.get('x_label', 'Index'))
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
+    
+    
+def plot_trend(
+    self, title='Trend', x_lab='Index', y_lab='Y', overlay=False, **kwargs
+):
+    """
+    Plots series trend.
+    """
+    trend = decompose_trend(self.y_transformed, self.season)
+    
+    plt.plot(self.date_original, trend, **kwargs)
+    if overlay == True:
+        plt.plot(self.date_original, self.y_transformed, linestyle='dashed')
+        plt.legend(['Trend', 'Series'], loc='upper left')
+    else:
+        pass
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
+    
+    
+def plot_seasonality(
+    self, title='Seasonality', x_lab='Index', y_lab='Y', model='additive',
+    **kwargs
+):
+    """
+    Plots series seasonality.
+    """
+    seasonality = decompose_seasonality(self.y_transformed, self.season, model)
+    
+    plt.plot(self.date_original, seasonality, **kwargs)
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
+    
+
+def plot_random(
+    self, title='Random', x_lab='Index', y_lab='Y', model='additive', **kwargs
+):
+    """
+    Plots random component of series.
+    """
+    remainder = decompose_remainder(self.y_transformed, self.season, model)
+    
+    plt.plot(self.date_original, remainder, **kwargs)
+    
+    plt.title(title)
+    plt.ylabel(y_lab)
+    plt.xlabel(x_lab)
+    

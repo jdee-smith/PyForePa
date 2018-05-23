@@ -14,7 +14,7 @@ def sma_model(
     Returns a forecast object based on simple moving average
     forecaster.
     """
-    model = 'model_model'
+    model = 'sma_model'
     y_train = self.y_transformed
     i = 1
     j = len(y_train)
