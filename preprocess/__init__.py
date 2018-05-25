@@ -44,5 +44,9 @@ class tseries(object):
     from ._transform import transform_square_root, transform_natural_log
     from ._plot import (
         plot_series_original, plot_series_transformed, plot_acf, plot_trend,
-        plot_seasonality, plot_random
+        plot_seasonality, plot_random, plot_series_decomposition
+    )
+    from ._decompose import(
+    	decompose_trend, decompose_detrend, decompose_seasonality,
+    	decompose_remainder, decompose
     )

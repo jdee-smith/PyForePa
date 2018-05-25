@@ -86,7 +86,6 @@ def accuracy(self, y_true, how):
     Returns array of accuracy measurements in the order they are listed
     in measure argument.
     """
-
     if len(self.y_point) != len(y_true):
         raise Exception('Length of y_point and y_true must be the same.')
     else:

@@ -24,7 +24,7 @@ def boot_sd_residuals(data, n_samples):
 
 def acf(data, max_lags='default', ci=True, level=0.95):
     """
-    Returns autocorrelation coefficients and their bounds 
+    Returns autocorrelation coefficients and their bounds
     of length max_lags.
     """
     n = len(data)
@@ -61,70 +61,102 @@ def acf(data, max_lags='default', ci=True, level=0.95):
     return acf_coeffs
 
 
-def decompose_trend(data, order):
+def trend(data, order, center=True):
     """
-    Returns array consisting of series trends.
+    Returns array consisting of series trend.
     """
+    even_order = order % 2 == 0
+    trends = np.empty([0, 1])
     k = len(data)
     a = int(order / 2)
-    
-    if order % 2 == 0:
-        b = int(a - 1)
+
+    if center is False:
+        if order % 2 == 0:
+            b = int(a - 1)
+        else:
+            b = a
+        trends = np.convolve(data.reshape((k, )), np.ones(
+            (order, )) / order, mode='valid')
+        trends = np.pad(trends, (b, a), 'constant',
+                        constant_values=(np.nan, )).reshape(k, 1)
+
     else:
-        b = a
-    
-    trends = np.convolve(data.reshape((k, )), np.ones((order, )) / order, mode='valid')
-    trends = np.pad(trends, (b, a), 'constant', constant_values=(np.nan, )).reshape(k, 1)
-        
+        j = order
+        for i in np.arange(k):
+            multiplier = 1 / order
+            if even_order is True:
+                w1 = multiplier * np.sum(data[i:j])
+                w2 = multiplier * np.sum(data[i+1:j+1])
+                trend = np.mean((w1, w2))
+            else:
+                b = int(order - 1)
+                trend = np.sum(data[i-a:i+b]) / order
+            trends = np.vstack((trends, trend))
+            j += 1
+
+        pad = int(order / 2)
+
+        if order % 2 == 0:
+            trends = np.roll(trends, pad)
+        else:
+            pass
+
+        trends[:pad, ] = np.nan
+        trends[-pad:, ] = np.nan
+
     return trends
 
 
-def decompose_detrend(data, order, model='additive'):
+def detrend(data, order, center=True, model='additive'):
     """
     Returns array of detrended series.
     """
     k = len(data)
 
     if model == 'additive':
-        data_detrended = data.reshape(k, 1) - decompose_trend(data, order)
+        data_detrended = data.reshape(k, 1) - trend(data, order, center)
     elif model == 'multiplicative':
-        data_detrended = data.reshape(k, 1) / decompose_trend(data, order)
+        data_detrended = data.reshape(k, 1) / trend(data, order, center)
     else:
         raise ValueError('Model must be additive or multiplicative.')
-        
+
     return data_detrended
 
 
-def decompose_seasonality(data, order, model='additive'):
+def seasonality(data, order, center=True, model='additive', median='False'):
     """
     Returns array of series seasonality.
     """
     n_rows = int(len(data) / order)
     n_cols = order
-    
-    detrended_series = decompose_detrend(data, order, model)
-    
-    mat = np.nanmean(np.matrix(detrended_series).reshape([n_rows, n_cols]), axis=0).T
-    seasonality = np.array(np.tile(mat,(n_rows, 1)))
-    
+
+    detrended_series = detrend(data, order, center, model)
+
+    if median == 'False':
+        mat = np.nanmean(np.matrix(detrended_series).reshape(
+            [n_rows, n_cols]), axis=0).T
+    else:
+        mat = np.nanmedian(np.matrix(detrended_series).reshape(
+            [n_rows, n_cols]), axis=0).T
+
+    seasonality = np.array(np.tile(mat, (n_rows, 1)))
+
     return seasonality
 
 
-def decompose_remainder(data, order, model='additive'):
+def remainder(data, order, center=True, model='additive', median='False'):
     """
     Returns array of left behind random noise.
     """
     k = len(data)
-    trend = decompose_trend(data, order)
-    seasonality = decompose_seasonality(data, order, model)
-    
+    trends = trend(data, order, center)
+    avg_seasonality = seasonality(data, order, center, model, median)
+
     if model == 'additive':
-        remainder = data.reshape(k, 1) - trend - seasonality
+        remainder = data.reshape(k, 1) - trends - avg_seasonality
     elif model == 'multiplicative':
-        remainder = data.reshape(k, 1) / (trend * seasonality)
+        remainder = data.reshape(k, 1) / (trends * avg_seasonality)
     else:
         raise ValueError('Model must be additive or multiplicative.')
-        
+
     return remainder
-    
-        
