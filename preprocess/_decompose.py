@@ -1,26 +1,26 @@
 import numpy as np
 
-from helpers._helpers import (trend, detrend, seasonality, remainder)
+from helpers._helpers import trend, detrend, seasonality, remainder
 
 
-def decompose_trend(self, order='default', center=True):
+def decompose_trend(self, order="default", center=True):
     """
     Returns array consisting of series trend.
     """
     data = self.y_transformed
-    order = self.season if order is 'default' else order
+    order = self.season if order is "default" else order
 
     trends = trend(data, order, center)
 
     return trends
 
 
-def decompose_detrend(self, order='default', center=True, model='additive'):
+def decompose_detrend(self, order="default", center=True, model="additive"):
     """
     Returns array of detrended series.
     """
     data = self.y_transformed
-    order = self.season if order is 'default' else order
+    order = self.season if order is "default" else order
 
     data_detrended = detrend(data, order, center, model)
 
@@ -28,13 +28,13 @@ def decompose_detrend(self, order='default', center=True, model='additive'):
 
 
 def decompose_seasonality(
-    self, order='default', center=True, model='additive', median='False'
+    self, order="default", center=True, model="additive", median=False
 ):
     """
     Returns array of series seasonality.
     """
     data = self.y_transformed
-    order = self.season if order is 'default' else order
+    order = self.season if order is "default" else order
 
     avg_seasonality = seasonality(data, order, center, model, median)
 
@@ -42,28 +42,26 @@ def decompose_seasonality(
 
 
 def decompose_remainder(
-    self, order='default', center=True, model='additive', median='False'
+    self, order="default", center=True, model="additive", median=False
 ):
     """
     Returns array of left behind random noise.
     """
     data = self.y_transformed
-    order = self.season if order is 'default' else order
+    order = self.season if order is "default" else order
 
     random = remainder(data, order, center, model, median)
 
     return random
 
 
-def decompose(
-    self, order='default', center=True, model='additive', median='False'
-):
+def decompose(self, order="default", center=True, model="additive", median=False):
     """
     Returns array of decomposition results in the order of:
     original series, trend, seasonality, random.
     """
     data = self.y_transformed
-    order = self.season if order is 'default' else order
+    order = self.season if order is "default" else order
 
     trends = trend(data, order, center)
     avg_seasonality = seasonality(data, order, center, model, median)

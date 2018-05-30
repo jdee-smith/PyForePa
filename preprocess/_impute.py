@@ -32,8 +32,7 @@ def impute_random(self):
     """
     for idx, value in enumerate(self.y_transformed, 0):
         if np.isnan(value) == True:
-            self.y_transformed[idx] = np.random.choice(
-                self.y_transformed[:idx])
+            self.y_transformed[idx] = np.random.choice(self.y_transformed[:idx])
 
     return self
 
@@ -69,9 +68,7 @@ def impute_nocb(self):
     """
     for idx, value in enumerate(self.y_transformed[::-1], 0):
         if np.isnan(value) == True:
-            self.y_transformed[::-1][idx] = (
-                self.y_transformed[::-1][:idx][-1]
-            )
+            self.y_transformed[::-1][idx] = self.y_transformed[::-1][:idx][-1]
 
     return self
 
@@ -85,7 +82,7 @@ def impute_linear_interp(self):
     self.y_transformed = np.interp(
         np.arange(len(self.y_transformed)),
         np.arange(len(self.y_transformed))[mask],
-        self.y_transformed[mask]
+        self.y_transformed[mask],
     )
 
     return self
@@ -97,13 +94,13 @@ def impute(self, how, replacement=None):
     the method specified in the "how" argument.
     """
     imputation_dict = {
-        'mean': impute_mean,
-        'median': impute_median,
-        'random': impute_random,
-        'value': impute_value,
-        'locf': impute_locf,
-        'nocb': impute_nocb,
-        'linear_interpolation': impute_linear_interp
+        "mean": impute_mean,
+        "median": impute_median,
+        "random": impute_random,
+        "value": impute_value,
+        "locf": impute_locf,
+        "nocb": impute_nocb,
+        "linear_interpolation": impute_linear_interp,
     }
 
     tseries_obj = imputation_dict[how](self, replacement)

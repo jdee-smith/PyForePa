@@ -41,12 +41,14 @@ class tseries(object):
         impute_mean, impute_median, impute_random, impute_value, impute_locf,
         impute_nocb, impute_linear_interp, impute
     )
-    from ._transform import transform_square_root, transform_natural_log
+    from ._transform import (
+        transform_square_root, transform_natural_log, transform_detrend
+    )
     from ._plot import (
-        plot_series_original, plot_series_transformed, plot_acf, plot_trend,
-        plot_seasonality, plot_random, plot_series_decomposition
+        plot_series_original, plot_series_transformed, plot_acf, plot_pacf,
+        plot_trend, plot_seasonality, plot_random, plot_series_decomposition
     )
     from ._decompose import(
-    	decompose_trend, decompose_detrend, decompose_seasonality,
-    	decompose_remainder, decompose
+        decompose_trend, decompose_detrend, decompose_seasonality,
+        decompose_remainder, decompose
     )

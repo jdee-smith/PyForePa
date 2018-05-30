@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-from helpers._helpers import (acf, trend, detrend, seasonality, remainder)
+from helpers._helpers import (acf, pacf, trend, detrend, seasonality, remainder)
 
 
 plt.style.use('seaborn-muted')
@@ -37,7 +37,9 @@ date = np.array(np.arange(len(data)))
 #series = tseries(data, date).impute_linear_interp().transform_natural_log()
 series = tseries(y, x, season=12).impute_linear_interp()
 
-series.transform_square_root().y_transformed
+series.transform_detrend().y_transformed
+
+pacf(y)
 
 
 trend = series.decompose_trend()
@@ -49,6 +51,7 @@ decomposition = series.decompose()
 plt.show(series.plot_series_original())
 plt.show(series.plot_series_transformed())
 plt.show(series.plot_acf())
+plt.show(series.plot_pacf())
 plt.show(series.plot_trend(overlay=True))
 plt.show(series.plot_seasonality())
 plt.show(series.plot_random())

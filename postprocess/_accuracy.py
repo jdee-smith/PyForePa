@@ -87,17 +87,17 @@ def accuracy(self, y_true, how):
     in measure argument.
     """
     if len(self.y_point) != len(y_true):
-        raise Exception('Length of y_point and y_true must be the same.')
+        raise Exception("Length of y_point and y_true must be the same.")
     else:
         measure_dict = {
-            'ME': accuracy_me,
-            'RMSE': accuracy_rmse,
-            'MAE': accuracy_mae,
-            'MSE': accuracy_mse,
-            'MAPE': accuracy_mape,
-            'SMAPE': accuracy_smape,
-            'MDAE': accuracy_mdae,
-            'MMR': accuracy_mmr
+            "ME": accuracy_me,
+            "RMSE": accuracy_rmse,
+            "MAE": accuracy_mae,
+            "MSE": accuracy_mse,
+            "MAPE": accuracy_mape,
+            "SMAPE": accuracy_smape,
+            "MDAE": accuracy_mdae,
+            "MMR": accuracy_mmr,
         }
 
         measurements = np.empty([0, 1])
