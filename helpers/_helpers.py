@@ -24,49 +24,11 @@ def boot_sd_residuals(data, n_samples):
 
 def acf(data, max_lags="default", ci=True, level=0.95):
     """
-    Returns autocorrelation coefficients and their bounds
-    of length max_lags.
-    """
-    n = len(data)
-    mean = np.mean(data)
-    c0 = np.sum((data - mean) ** 2) / float(n)
-
-    if max_lags is "default":
-        max_lags = int(10 * np.log10(n))
-    else:
-        max_lags = int(max_lags)
-
-    def corr(h):
-        """
-        Returns autocorrelation coefficient and its bounds.
-        """
-        acf_coeff = np.sum(((data[: n - h] - mean) * (data[h:] - mean))) / n / c0
-
-        return acf_coeff
-
-    acf_coeffs = np.empty([0, 3])
-    for i in np.arange(max_lags):
-        acf_coeff = corr(i)
-        if ci is False:
-            acf_coeffs_ph = np.hstack((np.nan, acf_coeff, np.nan))
-            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
-        else:
-            t_crit = stats.t.ppf(q=level, df=(n - 3))
-            acf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
-            acf_coeff_ub = t_crit / np.sqrt(n)
-            acf_coeffs_ph = np.hstack((acf_coeff_lb, acf_coeff, acf_coeff_ub))
-            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
-
-    return acf_coeffs
-
-
-def pacf(data, max_lags="default", ci=True, level=0.95):
-    """
     Returns partial autocorrelation coefficients and their bounds
     of length max_lags.
     """
     n = len(data)
-    x0 = data[:,]
+    x0 = data[:, ]
 
     if max_lags is "default":
         max_lags = int(10 * np.log10(n))
@@ -78,7 +40,51 @@ def pacf(data, max_lags="default", ci=True, level=0.95):
         xlags[:, i] = np.roll(data, i)
 
     xlags[np.triu_indices(xlags.shape[1], 1)] = 0
-    
+
+    acf_coeffs = np.empty([0, 3])
+    for k in range(1, max_lags):
+        acf_coeff = np.linalg.lstsq(xlags[k:, [0, k]], x0[k:])[0][-1]
+        if ci is False:
+            acf_coeffs_ph = np.hstack((np.nan, acf_coeff, np.nan))
+            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
+            if k + 1 == max_lags:
+                acf_coeffs = np.vstack([[np.nan, 1., np.nan], acf_coeffs])
+            else:
+                continue
+        else:
+            t_crit = stats.t.ppf(q=level, df=(n - 3))
+            acf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
+            acf_coeff_ub = t_crit / np.sqrt(n)
+            acf_coeffs_ph = np.hstack((acf_coeff_lb, acf_coeff, acf_coeff_ub))
+            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
+            if k + 1 == max_lags:
+                acf_coeffs = np.vstack(
+                    [[acf_coeff_lb, 1., acf_coeff_ub], acf_coeffs])
+            else:
+                continue
+
+    return acf_coeffs
+
+
+def pacf(data, max_lags="default", ci=True, level=0.95):
+    """
+    Returns partial autocorrelation coefficients and their bounds
+    of length max_lags.
+    """
+    n = len(data)
+    x0 = data[:, ]
+
+    if max_lags is "default":
+        max_lags = int(10 * np.log10(n))
+    else:
+        max_lags = int(max_lags)
+
+    xlags = np.ones((n, max_lags))
+    for i in range(1, max_lags):
+        xlags[:, i] = np.roll(data, i)
+
+    xlags[np.triu_indices(xlags.shape[1], 1)] = 0
+
     pacf_coeffs = np.empty([0, 3])
     for k in range(1, max_lags):
         pacf_coeff = np.linalg.lstsq(xlags[k:, :k+1], x0[k:])[0][-1]
@@ -93,13 +99,15 @@ def pacf(data, max_lags="default", ci=True, level=0.95):
             t_crit = stats.t.ppf(q=level, df=(n - 3))
             pacf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
             pacf_coeff_ub = t_crit / np.sqrt(n)
-            pacf_coeffs_ph = np.hstack((pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
+            pacf_coeffs_ph = np.hstack(
+                (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
             pacf_coeffs = np.vstack((pacf_coeffs, pacf_coeffs_ph))
             if k + 1 == max_lags:
-                pacf_coeffs = np.vstack([[pacf_coeff_lb, 1., pacf_coeff_ub], pacf_coeffs])
+                pacf_coeffs = np.vstack(
+                    [[pacf_coeff_lb, 1., pacf_coeff_ub], pacf_coeffs])
             else:
                 continue
-    
+
     return pacf_coeffs
 
 
@@ -130,7 +138,7 @@ def trend(data, order, center=True):
             multiplier = 1 / order
             if even_order is True:
                 w1 = multiplier * np.sum(data[i:j])
-                w2 = multiplier * np.sum(data[i + 1 : j + 1])
+                w2 = multiplier * np.sum(data[i + 1: j + 1])
                 trend = np.mean((w1, w2))
                 trends = np.vstack((trends, trend))
             else:
@@ -151,8 +159,8 @@ def trend(data, order, center=True):
         else:
             pass
 
-        trends[:pad,] = np.nan
-        trends[-pad:,] = np.nan
+        trends[:pad, ] = np.nan
+        trends[-pad:, ] = np.nan
 
     return trends
 
@@ -215,20 +223,89 @@ def remainder(data, order, center=True, model="additive", median=False):
     return remainder
 
 
-from statsmodels.tsa.seasonal import seasonal_decompose
+def nan_mean(data, trailing=True):
+    """
+    Fills missing values with mean of series up to that point.
+    """
+    for idx, value in enumerate(data, 0):
+        if np.isnan(value):
+            if trailing == True:
+                data[idx] = np.mean(data[:idx])
+            else:
+                data[idx] = np.nanmean(data)
 
-"""
-data = np.array([1, 2, 4, 5, 2, 3, 5, -5, 4, 5, 6, -5])
-order = 4
-detrended_series = detrend(data, order, center=True, model="additive")
-j = np.pad(
-    detrended_series.astype(float),
-    (0, order - detrended_series.size % order),
-    mode="constant",
-    constant_values=np.NaN,
-).reshape(-1, order)
-arr = np.nanmean(j, axis=1)
+    return data
 
-np.tile(np.nanmean(np.resize(jason, (2, 5)), axis=0), 2)
-np.resize(np.nanmean(np.resize(jason, (2, 5)), axis=0), (12, 1))
-"""
+
+def nan_median(data, trailing=True):
+    """
+    Fills missing values with median of series up to that point.
+    """
+    for idx, value in enumerate(data, 0):
+        if np.isnan(value):
+            if trailing == True:
+                data[idx] = np.median(data[:idx])
+            else:
+                data[idx] = np.nanmedian(data)
+
+    return data
+
+
+def nan_random(data, trailing=True):
+    """
+    Fills missing values with a random number from the series
+    up to that point.
+    """
+    for idx, value in enumerate(data, 0):
+        if np.isnan(value):
+            if trailing == True:
+                data[idx] = np.random.choice(data[:idx])
+            else:
+                data[idx] = np.random.choice(data)
+
+    return data
+
+
+def nan_value(data, replacement):
+    """
+    Fills missing values with a specific value.
+    """
+    for idx, value in enumerate(data, 0):
+        if np.isnan(value) == True:
+            data[idx] = replacement
+
+    return data
+
+
+def nan_locf(data):
+    """
+    Fills missing values with the most recent non-missing value.
+    """
+    for idx, value in enumerate(data, 0):
+        if np.isnan(value) == True:
+            #data[idx] = data[:idx][0]
+            data[idx] = data[:idx][-1]
+
+    return data
+
+
+def nan_nocb(data):
+    """
+    Fills missing values with the next non-missing value.
+    """
+    for idx, value in enumerate(data[::-1], 0):
+        if np.isnan(value) == True:
+            data[::-1][idx] = data[::-1][:idx][-1]
+
+    return data
+
+
+def nan_linear_interpolation(data):
+    """
+    Fills missing values via linear interpolation.
+    """
+    mask = np.logical_not(np.isnan(data))
+    data = np.interp(np.arange(len(data)), np.arange(
+        len(data))[mask], data[mask],)
+
+    return data

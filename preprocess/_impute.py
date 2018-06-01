@@ -1,108 +1,204 @@
 import numpy as np
 
+from itertools import zip_longest
 
-def impute_mean(self):
+from helpers._helpers import (
+    nan_mean, nan_median, nan_random, nan_value, nan_locf,
+    nan_nocb, nan_linear_interpolation, seasonality
+)
+
+
+def impute_mean(self, trailing=True, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with the mean up to that point.
     """
-    for idx, value in enumerate(self.y_transformed, 0):
-        if np.isnan(value) == True:
-            self.y_transformed[idx] = np.mean(self.y_transformed[:idx])
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_mean(de_seasonal, trailing)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_mean(data[k::order], trailing))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_mean(data, trailing)
 
     return self
 
 
-def impute_median(self):
+def impute_median(self, trailing=True, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with the median up to that point.
     """
-    for idx, value in enumerate(self.y_transformed, 0):
-        if np.isnan(value) == True:
-            self.y_transformed[idx] = np.median(self.y_transformed[:idx])
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_median(de_seasonal, trailing)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_median(data[k::order], trailing))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_median(data, trailing)
 
     return self
 
 
-def impute_random(self):
+def impute_random(self, trailing=True, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with a random number from the series up to that point.
     """
-    for idx, value in enumerate(self.y_transformed, 0):
-        if np.isnan(value) == True:
-            self.y_transformed[idx] = np.random.choice(self.y_transformed[:idx])
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_random(de_seasonal, trailing)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_random(data[k::order], trailing))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_random(data, trailing)
 
     return self
 
 
-def impute_value(self, replacement):
+def impute_value(self, replacement, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with a specific value.
     """
-    for idx, value in enumerate(self.y_transformed, 0):
-        if np.isnan(value) == True:
-            self.y_transformed[idx] = replacement
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_value(de_seasonal, replacement)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_value(data[k::order], replacement))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_value(data, replacement)
 
     return self
 
 
-def impute_locf(self):
+def impute_locf(self, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with the most recent non-missing value.
     """
-    for idx, value in enumerate(self.y_transformed, 0):
-        if np.isnan(value) == True:
-            self.y_transformed[idx] = self.y_transformed[:idx][0]
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_locf(de_seasonal)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_locf(data[k::order]))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_locf(data)
 
     return self
 
 
-def impute_nocb(self):
+def impute_nocb(self, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     with the next non-missing value.
     """
-    for idx, value in enumerate(self.y_transformed[::-1], 0):
-        if np.isnan(value) == True:
-            self.y_transformed[::-1][idx] = self.y_transformed[::-1][:idx][-1]
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_nocb(de_seasonal)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_nocb(data[k::order]))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_nocb(data)
 
     return self
 
 
-def impute_linear_interp(self):
+def impute_interpolation(self, mode=None, **kwargs):
     """
     Returns tseries object with missing values of the series filled
     via linear interpolation.
     """
-    mask = np.logical_not(np.isnan(self.y_transformed))
-    self.y_transformed = np.interp(
-        np.arange(len(self.y_transformed)),
-        np.arange(len(self.y_transformed))[mask],
-        self.y_transformed[mask],
-    )
+    data = self.y_transformed
+    order = kwargs.pop("order", self.season)
+
+    if mode is "decompose":
+        seasonal = seasonality(data, order, **kwargs).reshape(len(data))
+        de_seasonal = data - seasonal
+        self.y_transformed = seasonal + nan_linear_interpolation(de_seasonal)
+
+    elif mode is "split":
+        k = 0
+        r = []
+        while k < order:
+            r.append(nan_linear_interpolation(data[k::order]))
+            k += 1
+        rz = np.array(list(zip_longest(*r, fillvalue=np.nan))).flatten()
+        self.y_transformed = np.array([i for i in rz if not np.isnan(i).any()])
+
+    else:
+        self.y_transformed = nan_linear_interpolation(data)
 
     return self
-
-
-def impute(self, how, replacement=None):
-    """
-    Returns tseries object with missing values of the series filled by
-    the method specified in the "how" argument.
-    """
-    imputation_dict = {
-        "mean": impute_mean,
-        "median": impute_median,
-        "random": impute_random,
-        "value": impute_value,
-        "locf": impute_locf,
-        "nocb": impute_nocb,
-        "linear_interpolation": impute_linear_interp,
-    }
-
-    tseries_obj = imputation_dict[how](self, replacement)
-
-    return tseries_obj

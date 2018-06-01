@@ -39,7 +39,7 @@ class tseries(object):
 
     from ._impute import (
         impute_mean, impute_median, impute_random, impute_value, impute_locf,
-        impute_nocb, impute_linear_interp, impute
+        impute_nocb, impute_interpolation
     )
     from ._transform import (
         transform_square_root, transform_natural_log, transform_detrend
