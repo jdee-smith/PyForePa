@@ -46,9 +46,12 @@ class tseries(object):
     )
     from ._plot import (
         plot_series_original, plot_series_transformed, plot_acf, plot_pacf,
-        plot_trend, plot_seasonality, plot_random, plot_series_decomposition
+        plot_trend, plot_seasonality, plot_random, plot_series_decomposition,
+        plot_nan_distribution, plot_imputed_values
     )
     from ._decompose import(
         decompose_trend, decompose_detrend, decompose_seasonality,
         decompose_remainder, decompose
     )
+
+    from ._describe import(describe_acf, describe_pacf)

@@ -3,8 +3,14 @@ import numpy as np
 from itertools import zip_longest
 
 from helpers._helpers import (
-    nan_mean, nan_median, nan_random, nan_value, nan_locf,
-    nan_nocb, nan_linear_interpolation, seasonality
+    nan_mean,
+    nan_median,
+    nan_random,
+    nan_value,
+    nan_locf,
+    nan_nocb,
+    nan_linear_interpolation,
+    seasonality,
 )
 
 

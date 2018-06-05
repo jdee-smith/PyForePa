@@ -1,6 +1,7 @@
 import numpy as np
 
 from scipy import stats
+from scipy.linalg import toeplitz
 
 
 def boot_sd_residuals(data, n_samples):
@@ -22,57 +23,48 @@ def boot_sd_residuals(data, n_samples):
     return bootstrap_sd_residuals
 
 
-def acf(data, max_lags="default", ci=True, level=0.95):
+def acf_corr(data, max_lags="default", ci=True, level=0.95):
     """
-    Returns partial autocorrelation coefficients and their bounds
+    Returns autocorrelation coefficients and their bounds
     of length max_lags.
     """
     n = len(data)
-    x0 = data[:, ]
+    mean = np.mean(data)
+    c0 = np.sum((data - mean) ** 2) / float(n)
 
     if max_lags is "default":
         max_lags = int(10 * np.log10(n))
     else:
         max_lags = int(max_lags)
 
-    xlags = np.ones((n, max_lags))
-    for i in range(1, max_lags):
-        xlags[:, i] = np.roll(data, i)
+    def corr(h):
+        acf_coeff = np.sum(((data[: n - h] - mean) * (data[h:] - mean))) / n / c0
+        return acf_coeff
 
-    xlags[np.triu_indices(xlags.shape[1], 1)] = 0
+    t_crit = stats.t.ppf(q=level, df=(n - 3))
+    acf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
+    acf_coeff_ub = t_crit / np.sqrt(n)
 
     acf_coeffs = np.empty([0, 3])
-    for k in range(1, max_lags):
-        acf_coeff = np.linalg.lstsq(xlags[k:, [0, k]], x0[k:])[0][-1]
+    for k in np.arange(max_lags):
+        acf_coeff = corr(k)
         if ci is False:
-            acf_coeffs_ph = np.hstack((np.nan, acf_coeff, np.nan))
-            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
-            if k + 1 == max_lags:
-                acf_coeffs = np.vstack([[np.nan, 1., np.nan], acf_coeffs])
-            else:
-                continue
+            acf_coeffs = np.vstack((acf_coeffs, (np.nan, acf_coeff, np.nan)))
         else:
-            t_crit = stats.t.ppf(q=level, df=(n - 3))
-            acf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
-            acf_coeff_ub = t_crit / np.sqrt(n)
-            acf_coeffs_ph = np.hstack((acf_coeff_lb, acf_coeff, acf_coeff_ub))
-            acf_coeffs = np.vstack((acf_coeffs, acf_coeffs_ph))
-            if k + 1 == max_lags:
-                acf_coeffs = np.vstack(
-                    [[acf_coeff_lb, 1., acf_coeff_ub], acf_coeffs])
-            else:
-                continue
+            acf_coeffs = np.vstack(
+                (acf_coeffs, (acf_coeff_lb, acf_coeff, acf_coeff_ub))
+            )
 
     return acf_coeffs
 
 
-def pacf(data, max_lags="default", ci=True, level=0.95):
+def pacf_ols(data, max_lags="default", ci=True, level=0.95):
     """
-    Returns partial autocorrelation coefficients and their bounds
-    of length max_lags.
+    Returns partial autocorrelation coefficients estimated via OLS along with
+    their bounds of length max_lags.
     """
     n = len(data)
-    x0 = data[:, ]
+    x0 = data[:,]
 
     if max_lags is "default":
         max_lags = int(10 * np.log10(n))
@@ -85,28 +77,82 @@ def pacf(data, max_lags="default", ci=True, level=0.95):
 
     xlags[np.triu_indices(xlags.shape[1], 1)] = 0
 
+    t_crit = stats.t.ppf(q=level, df=(n - 3))
+    pacf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
+    pacf_coeff_ub = t_crit / np.sqrt(n)
+
     pacf_coeffs = np.empty([0, 3])
-    for k in range(1, max_lags):
-        pacf_coeff = np.linalg.lstsq(xlags[k:, :k+1], x0[k:])[0][-1]
+    for k in range(1, max_lags + 1):
+        pacf_coeff = np.linalg.lstsq(xlags[k:, : k + 1], x0[k:])[0][-1]
         if ci is False:
-            pacf_coeffs_ph = np.hstack((np.nan, pacf_coeff, np.nan))
-            pacf_coeffs = np.vstack((pacf_coeffs, pacf_coeffs_ph))
-            if k + 1 == max_lags:
-                pacf_coeffs = np.vstack([[np.nan, 1., np.nan], pacf_coeffs])
-            else:
-                continue
+            pacf_coeffs = np.vstack((pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
         else:
-            t_crit = stats.t.ppf(q=level, df=(n - 3))
-            pacf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
-            pacf_coeff_ub = t_crit / np.sqrt(n)
-            pacf_coeffs_ph = np.hstack(
-                (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
-            pacf_coeffs = np.vstack((pacf_coeffs, pacf_coeffs_ph))
-            if k + 1 == max_lags:
-                pacf_coeffs = np.vstack(
-                    [[pacf_coeff_lb, 1., pacf_coeff_ub], pacf_coeffs])
-            else:
-                continue
+            pacf_coeffs = np.vstack(
+                (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
+            )
+
+    return pacf_coeffs
+
+
+def yule_walker(data, order, method="unbiased", demean=True):
+    """
+    Returns partial autocorrelation coefficients obtained via Yule-Walker
+    equations. Code mostly from statsmodels.
+    """
+    n = len(data)
+
+    if demean is True:
+        data = data - np.mean(data)
+    else:
+        pass
+
+    if method == "unbiased":
+
+        def denom(k):
+            return n - k
+
+    else:
+
+        def denom(k):
+            return n
+
+    r = np.zeros(order + 1)
+    r[0] = np.sum(data ** 2) / denom(0)
+
+    for k in range(1, order + 1):
+        r[k] = np.sum(data[0:-k] * data[k:]) / denom(k)
+
+    R = toeplitz(r[:-1])
+    rho = np.linalg.solve(R, r[1:])
+
+    return rho
+
+
+def pacf_yule_walker(data, max_lags="default", method="unbiased", ci=True, level=0.95):
+    """
+    Returns autocorrelation coefficients estimated via Yule-Walker equations
+    and their bounds of length max_lags.
+    """
+    n = len(data)
+
+    if max_lags is "default":
+        max_lags = int(10 * np.log10(n))
+    else:
+        max_lags = int(max_lags)
+
+    t_crit = stats.t.ppf(q=level, df=(n - 3))
+    pacf_coeff_lb = np.negative(t_crit) / np.sqrt(n)
+    pacf_coeff_ub = t_crit / np.sqrt(n)
+
+    pacf_coeffs = np.empty([0, 3])
+    for k in range(1, max_lags + 1):
+        pacf_coeff = yule_walker(data, order=k, method=method, demean=True)[-1]
+        if ci is False:
+            pacf_coeffs = np.vstack((pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
+        else:
+            pacf_coeffs = np.vstack(
+                (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
+            )
 
     return pacf_coeffs
 
@@ -138,7 +184,7 @@ def trend(data, order, center=True):
             multiplier = 1 / order
             if even_order is True:
                 w1 = multiplier * np.sum(data[i:j])
-                w2 = multiplier * np.sum(data[i + 1: j + 1])
+                w2 = multiplier * np.sum(data[i + 1 : j + 1])
                 trend = np.mean((w1, w2))
                 trends = np.vstack((trends, trend))
             else:
@@ -159,8 +205,8 @@ def trend(data, order, center=True):
         else:
             pass
 
-        trends[:pad, ] = np.nan
-        trends[-pad:, ] = np.nan
+        trends[:pad,] = np.nan
+        trends[-pad:,] = np.nan
 
     return trends
 
@@ -283,7 +329,7 @@ def nan_locf(data):
     """
     for idx, value in enumerate(data, 0):
         if np.isnan(value) == True:
-            #data[idx] = data[:idx][0]
+            # data[idx] = data[:idx][0]
             data[idx] = data[:idx][-1]
 
     return data
@@ -305,7 +351,6 @@ def nan_linear_interpolation(data):
     Fills missing values via linear interpolation.
     """
     mask = np.logical_not(np.isnan(data))
-    data = np.interp(np.arange(len(data)), np.arange(
-        len(data))[mask], data[mask],)
+    data = np.interp(np.arange(len(data)), np.arange(len(data))[mask], data[mask])
 
     return data
