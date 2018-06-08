@@ -38,8 +38,7 @@ def acf_corr(data, max_lags="default", ci=True, level=0.95):
         max_lags = int(max_lags)
 
     def corr(h):
-        acf_coeff = np.sum(
-            ((data[: n - h] - mean) * (data[h:] - mean))) / n / c0
+        acf_coeff = np.sum(((data[: n - h] - mean) * (data[h:] - mean))) / n / c0
         return acf_coeff
 
     t_crit = stats.t.ppf(q=level, df=(n - 3))
@@ -66,7 +65,7 @@ def pacf_ols(data, max_lags="default", ci=True, level=0.95):
     """
     n = len(data)
     x0 = data
-    #x0 = data[:, ]
+    # x0 = data[:, ]
 
     if max_lags is "default":
         max_lags = int(10 * np.log10(n))
@@ -87,8 +86,7 @@ def pacf_ols(data, max_lags="default", ci=True, level=0.95):
     for k in range(1, max_lags + 1):
         pacf_coeff = np.linalg.lstsq(xlags[k:, : k + 1], x0[k:])[0][-1]
         if ci is False:
-            pacf_coeffs = np.vstack(
-                (pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
+            pacf_coeffs = np.vstack((pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
         else:
             pacf_coeffs = np.vstack(
                 (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
@@ -151,8 +149,7 @@ def pacf_yule_walker(data, max_lags="default", method="unbiased", ci=True, level
     for k in range(1, max_lags + 1):
         pacf_coeff = yule_walker(data, order=k, method=method, demean=True)[-1]
         if ci is False:
-            pacf_coeffs = np.vstack(
-                (pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
+            pacf_coeffs = np.vstack((pacf_coeffs, (np.nan, pacf_coeff, np.nan)))
         else:
             pacf_coeffs = np.vstack(
                 (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
@@ -188,7 +185,7 @@ def trend(data, order, center=True):
             multiplier = 1 / order
             if even_order is True:
                 w1 = multiplier * np.sum(data[i:j])
-                w2 = multiplier * np.sum(data[i + 1: j + 1])
+                w2 = multiplier * np.sum(data[i + 1 : j + 1])
                 trend = np.mean((w1, w2))
                 trends = np.vstack((trends, trend))
             else:
@@ -209,8 +206,8 @@ def trend(data, order, center=True):
         else:
             pass
 
-        trends[:pad, ] = np.nan
-        trends[-pad:, ] = np.nan
+        trends[:pad,] = np.nan
+        trends[-pad:,] = np.nan
 
     return trends
 
@@ -355,8 +352,7 @@ def nan_linear_interpolation(data):
     Fills missing values via linear interpolation.
     """
     mask = np.logical_not(np.isnan(data))
-    data = np.interp(np.arange(len(data)), np.arange(
-        len(data))[mask], data[mask])
+    data = np.interp(np.arange(len(data)), np.arange(len(data))[mask], data[mask])
 
     return data
 

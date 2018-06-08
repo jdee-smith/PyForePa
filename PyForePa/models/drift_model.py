@@ -10,8 +10,8 @@ def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None)
     """
     Returns a forecast object based on drift forecaster.
     """
-    model = 'drift_model'
-    y_train = self.values['X']
+    model = "drift_model"
+    y_train = self.values["X"]
     i = 1
     j = len(y_train)
     k = j + (h - 1)
@@ -44,29 +44,28 @@ def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None)
         j += 1
 
     dtypes = np.dtype(
-        [('lower', y_lb.dtype),
-         ('point', y_point.dtype),
-         ('upper', y_ub.dtype)
-         ])
+        [("lower", y_lb.dtype), ("point", y_point.dtype), ("upper", y_ub.dtype)]
+    )
 
     forecasts = np.empty(len(y_point), dtype=dtypes)
-    forecasts['lower'] = y_lb.reshape(len(y_lb), )
-    forecasts['point'] = y_point.reshape(len(y_point), )
-    forecasts['upper'] = y_ub.reshape(len(y_ub), )
+    forecasts["lower"] = y_lb.reshape(len(y_lb))
+    forecasts["point"] = y_point.reshape(len(y_point))
+    forecasts["upper"] = y_ub.reshape(len(y_ub))
 
     model_info = np.array(
         [(model, ci, level, h, bootstrap, n_samples)],
         dtype=[
-            ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-            ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
-        ]
+            ("model", "S20"),
+            ("ci", "S10"),
+            ("level", np.float64),
+            ("h", np.int8),
+            ("bootstrap", "S10"),
+            ("n_samples", np.float64),
+        ],
     )
 
-    series_info = np.array([(self.frequency)], dtype=[
-                           ('frequency', np.float64)])
+    series_info = np.array([(self.frequency)], dtype=[("frequency", np.float64)])
 
-    forecast_obj = forecast(
-        model_info, forecasts, self.values, series_info
-    )
+    forecast_obj = forecast(model_info, forecasts, self.values, series_info)
 
     return forecast_obj

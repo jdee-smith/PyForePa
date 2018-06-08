@@ -15,18 +15,13 @@ from PyForePa.helpers.helpers import (
 
 
 def plot_series(
-    self,
-    title="Series",
-    x_lab="Index",
-    y_lab="Y",
-    x_rotation=45,
-    **kwargs
+    self, title="Series", x_lab="Index", y_lab="Y", x_rotation=45, **kwargs
 ):
     """
     Plots series.
     """
-    x = self.values['index'].astype('O')
-    y = self.values['X']
+    x = self.values["index"].astype("O")
+    y = self.values["X"]
 
     plt.plot(x, y, **kwargs)
 
@@ -49,7 +44,7 @@ def plot_acf(
     """
     Plots autocorrelation function of series up to max_lags.
     """
-    data = self.values['X']
+    data = self.values["X"]
     res = acf_corr(data, max_lags, ci=True, level=level)
     coeffs = res[:, 1]
     coeffs_lb = res[0][0]
@@ -84,11 +79,10 @@ def plot_pacf(
     """
     Plots autocorrelation function of series up to max_lags.
     """
-    data = self.values['X']
+    data = self.values["X"]
 
     if method == "yw_unbiased":
-        res = pacf_yule_walker(
-            data, max_lags, "unbiased", ci=True, level=level)
+        res = pacf_yule_walker(data, max_lags, "unbiased", ci=True, level=level)
     elif method == "yw_mle":
         res = pacf_yule_walker(data, max_lags, "mle", ci=True, level=level)
     else:
@@ -128,8 +122,8 @@ def plot_trend(
     """
     Plots series trend.
     """
-    x = self.values['index'].astype('O')
-    y = self.values['X']
+    x = self.values["index"].astype("O")
+    y = self.values["X"]
     order = self.frequency if order is "default" else order
 
     trends = trend(y, order, center)
@@ -163,8 +157,8 @@ def plot_seasonality(
     """
     Plots series seasonality.
     """
-    x = self.values['index'].astype('O')
-    y = self.values['X']
+    x = self.values["index"].astype("O")
+    y = self.values["X"]
     order = self.frequency if order is "default" else order
 
     avg_seasonality = seasonality(y, order, center, model, median)
@@ -193,8 +187,8 @@ def plot_random(
     """
     Plots random component of series.
     """
-    x = self.values['index'].astype('O')
-    y = self.values['X']
+    x = self.values["index"].astype("O")
+    y = self.values["X"]
     order = self.frequency if order is "default" else order
 
     random = remainder(y, order, center, model, median)
@@ -223,7 +217,7 @@ def plot_series_decomposition(
     """
     Plots decomposition of series.
     """
-    x = self.values['index'].astype('O')
+    x = self.values["index"].astype("O")
     order = self.frequency if order is "default" else order
 
     decomposition = self.decompose()
@@ -261,8 +255,8 @@ def plot_nan_distribution(
     """
     Plots distribution of missing values.
     """
-    a = self.values['index'].astype('O')
-    b = self.values['X']
+    a = self.values["index"].astype("O")
+    b = self.values["X"]
 
     plt.plot(a, b, **kwargs)
 

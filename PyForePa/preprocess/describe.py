@@ -7,7 +7,7 @@ def describe_acf(self, max_lags="default", ci=True, level=0.95):
     """
     Returns autocorrelation coefficients and their bounds of length max_lags.
     """
-    data = self.values['X']
+    data = self.values["X"]
 
     acf = acf_corr(data, max_lags, ci, level)
 
@@ -22,7 +22,7 @@ def describe_pacf(self, method="yw_unbiased", max_lags="default", ci=True, level
     Returns partial autocorrelation coefficients and their bounds of length
     max_lags.
     """
-    data = self.values['X']
+    data = self.values["X"]
 
     if method == "yw_unbiased":
         pacf = pacf_yule_walker(data, max_lags, "unbiased", ci, level)
