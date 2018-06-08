@@ -2,19 +2,18 @@ import numpy as np
 
 from scipy import stats
 
-from postprocess import forecast
-from helpers._helpers import boot_sd_residuals
+#from PyForePa.postprocess import forecast
+from PyForePa import forecast
+from PyForePa.helpers.helpers import boot_sd_residuals
 
 
-def wma_model(
-    self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500,
-    weights=[0.5, 0.5]
+def random_model(
+    self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
 ):
     """
-    Returns a forecast object based on weighted moving average
-    forecaster.
+    Returns a forecast object based on random forecaster.
     """
-    model = 'wma_model'
+    model = 'random_model'
     y_train = self.y_transformed
     i = 1
     j = len(y_train)
@@ -24,16 +23,13 @@ def wma_model(
     y_ub = np.empty([0, 1])
     residuals = np.diff(y_train)
 
-    n_periods = len(weights)
-    weights = np.array(weights)
-
     if bootstrap is False:
         sd_residuals = np.std(residuals)
     else:
         sd_residuals = boot_sd_residuals(y_train, n_samples)
 
     while j <= k:
-        pred = np.sum(y_train[np.negative(n_periods):] * weights)
+        pred = np.random.choice(y_train)
         y_point = np.vstack((y_point, pred))
         if ci is False:
             y_lb = np.vstack((y_lb, np.nan))
@@ -50,12 +46,10 @@ def wma_model(
         j += 1
 
     model_info = np.array(
-        [(model, ci, level, h, n_periods, bootstrap, n_samples, weights)],
+        [(model, ci, level, h, bootstrap, n_samples)],
         dtype=[
             ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-            ('h', np.int8), ('n_periods', np.float64),
-            ('bootstrap', 'S10'), ('n_samples', np.float64),
-            ('weights', object)
+            ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
         ]
     )
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from helpers._helpers import detrend
+from PyForePa.helpers.helpers import detrend
 
 
 def transform_square_root(self):
@@ -8,7 +8,8 @@ def transform_square_root(self):
     Returns tseries object with y_original transformed via square root
     transformation.
     """
-    self.y_transformed = np.sqrt(np.float64(self.y_transformed))
+    data = self.values['X']
+    self.values['X'] = np.sqrt(data)
 
     return self
 
@@ -18,7 +19,8 @@ def transform_natural_log(self):
     Returns tseries object with y_original transformed via natural
     log transformation.
     """
-    self.y_transformed = np.log(np.float64(self.y_transformed))
+    data = self.values['X']
+    self.values['X'] = np.log(data)
 
     return self
 
@@ -27,9 +29,9 @@ def transform_detrend(self, order="default", center=True):
     """
     Returns tseries object with trend removed from y_original.
     """
-    data = self.y_transformed
-    order = self.season if order is "default" else order
+    data = self.values['X']
+    order = self.frequency if order is "default" else order
 
-    self.y_transformed = detrend(data, order, center)
+    self.values['X'] = detrend(data, order, center).reshape(len(data), )
 
     return self

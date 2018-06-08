@@ -2,18 +2,16 @@ import numpy as np
 
 from scipy import stats
 
-from postprocess import forecast
-from helpers._helpers import boot_sd_residuals
+from PyForePa import forecast
+from PyForePa.helpers.helpers import boot_sd_residuals
 
 
-def random_model(
-    self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500
-):
+def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None):
     """
-    Returns a forecast object based on random forecaster.
+    Returns a forecast object based on drift forecaster.
     """
-    model = 'random_model'
-    y_train = self.y_transformed
+    model = 'drift_model'
+    y_train = self.values['X']
     i = 1
     j = len(y_train)
     k = j + (h - 1)
@@ -28,14 +26,15 @@ def random_model(
         sd_residuals = boot_sd_residuals(y_train, n_samples)
 
     while j <= k:
-        pred = np.random.choice(y_train)
+        drift = (y_train[-1] - y_train[0]) / (j - 1)
+        pred = y_train[-1] + drift
         y_point = np.vstack((y_point, pred))
         if ci is False:
             y_lb = np.vstack((y_lb, np.nan))
             y_ub = np.vstack((y_ub, np.nan))
         else:
             se_pred = sd_residuals * np.sqrt(i)
-            t_crit = stats.t.ppf(q=level, df=(j - 1))
+            t_crit = stats.t.ppf(q=level, df=(j - 2))
             pred_lb = pred - (t_crit * se_pred)
             pred_ub = pred + (t_crit * se_pred)
             y_lb = np.vstack((y_lb, pred_lb))
@@ -43,6 +42,17 @@ def random_model(
         y_train = np.append(y_train, pred)
         i += 1
         j += 1
+
+    dtypes = np.dtype(
+        [('lower', y_lb.dtype),
+         ('point', y_point.dtype),
+         ('upper', y_ub.dtype)
+         ])
+
+    forecasts = np.empty(len(y_point), dtype=dtypes)
+    forecasts['lower'] = y_lb.reshape(len(y_lb), )
+    forecasts['point'] = y_point.reshape(len(y_point), )
+    forecasts['upper'] = y_ub.reshape(len(y_ub), )
 
     model_info = np.array(
         [(model, ci, level, h, bootstrap, n_samples)],
@@ -52,9 +62,11 @@ def random_model(
         ]
     )
 
+    series_info = np.array([(self.frequency)], dtype=[
+                           ('frequency', np.float64)])
+
     forecast_obj = forecast(
-        model_info, y_point, y_lb, y_ub, residuals, self.y_original,
-        self.date_original, self.season, self.y_transformed
+        model_info, forecasts, self.values, series_info
     )
 
     return forecast_obj

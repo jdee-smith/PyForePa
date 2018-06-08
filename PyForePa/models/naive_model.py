@@ -2,17 +2,22 @@ import numpy as np
 
 from scipy import stats
 
-from postprocess import forecast
-from helpers._helpers import boot_sd_residuals
+#from PyForePa.postprocess import forecast
+from PyForePa import forecast
+from PyForePa.helpers.helpers import boot_sd_residuals
 
 
-def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
+def naive_model(
+    self, h=1, ci=True, level=0.95, seasonal=False, bootstrap=False,
+    n_samples=500
+):
     """
-    Returns a forecast object based on drift forecaster.
+    Returns an forecast object based on naive forecaster.
     """
-    model = 'drift_model'
+    model = 'naive_model'
     y_train = self.y_transformed
     i = 1
+    s = np.negative(self.season)
     j = len(y_train)
     k = j + (h - 1)
     y_point = np.empty([0, 1])
@@ -26,15 +31,17 @@ def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
         sd_residuals = boot_sd_residuals(y_train, n_samples)
 
     while j <= k:
-        drift = (y_train[-1] - y_train[0]) / (j - 1)
-        pred = y_train[-1] + drift
+        if seasonal is True:
+            pred = y_train[s]
+        else:
+            pred = y_train[-1]
         y_point = np.vstack((y_point, pred))
         if ci is False:
             y_lb = np.vstack((y_lb, np.nan))
             y_ub = np.vstack((y_ub, np.nan))
         else:
             se_pred = sd_residuals * np.sqrt(i)
-            t_crit = stats.t.ppf(q=level, df=(j - 2))
+            t_crit = stats.t.ppf(q=level, df=(j - 1))
             pred_lb = pred - (t_crit * se_pred)
             pred_ub = pred + (t_crit * se_pred)
             y_lb = np.vstack((y_lb, pred_lb))
@@ -44,10 +51,11 @@ def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
         j += 1
 
     model_info = np.array(
-        [(model, ci, level, h, bootstrap, n_samples)],
+        [(model, ci, level, h, seasonal, bootstrap, n_samples)],
         dtype=[
             ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-            ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
+            ('h', np.int8), ('seasonal', np.int8), ('bootstrap', 'S10'),
+            ('n_samples', np.float64)
         ]
     )
 

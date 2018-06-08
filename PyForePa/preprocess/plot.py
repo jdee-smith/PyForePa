@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from helpers._helpers import (
+from datetime import timedelta
+
+from PyForePa.helpers.helpers import (
     acf_corr,
     pacf_ols,
     pacf_yule_walker,
@@ -12,38 +14,21 @@ from helpers._helpers import (
 )
 
 
-def plot_series_original(
+def plot_series(
     self,
-    title="Original Series",
+    title="Series",
     x_lab="Index",
     y_lab="Y",
     x_rotation=45,
     **kwargs
 ):
     """
-    Plots original series.
+    Plots series.
     """
-    plt.plot(self.date_original, self.y_original, **kwargs)
+    x = self.values['index'].astype('O')
+    y = self.values['X']
 
-    plt.title(title)
-    plt.ylabel(y_lab)
-    plt.xlabel(x_lab)
-    plt.xticks(rotation=x_rotation)
-    plt.tight_layout()
-
-
-def plot_series_transformed(
-    self,
-    title="Transformed Series",
-    x_lab="Index",
-    y_lab="Y",
-    x_rotation=45,
-    **kwargs
-):
-    """
-    Plots transformed series.
-    """
-    plt.plot(self.date_original, self.y_transformed, **kwargs)
+    plt.plot(x, y, **kwargs)
 
     plt.title(title)
     plt.ylabel(y_lab)
@@ -64,7 +49,8 @@ def plot_acf(
     """
     Plots autocorrelation function of series up to max_lags.
     """
-    res = acf_corr(data=self.y_transformed, max_lags=max_lags, ci=True, level=level)
+    data = self.values['X']
+    res = acf_corr(data, max_lags, ci=True, level=level)
     coeffs = res[:, 1]
     coeffs_lb = res[0][0]
     coeffs_ub = res[0][2]
@@ -98,24 +84,15 @@ def plot_pacf(
     """
     Plots autocorrelation function of series up to max_lags.
     """
+    data = self.values['X']
+
     if method == "yw_unbiased":
         res = pacf_yule_walker(
-            data=self.y_transformed,
-            max_lags=max_lags,
-            method="unbiased",
-            ci=True,
-            level=level,
-        )
+            data, max_lags, "unbiased", ci=True, level=level)
     elif method == "yw_mle":
-        res = pacf_yule_walker(
-            data=self.y_transformed,
-            max_lags=max_lags,
-            method="mle",
-            ci=True,
-            level=level,
-        )
+        res = pacf_yule_walker(data, max_lags, "mle", ci=True, level=level)
     else:
-        res = pacf_ols(data=self.y_transformed, max_lags=max_lags, ci=True, level=0.95)
+        res = pacf_ols(data, max_lags, ci=True, level=level)
 
     coeffs = res[:, 1]
     coeffs_lb = res[0][0]
@@ -151,13 +128,15 @@ def plot_trend(
     """
     Plots series trend.
     """
-    order = self.season if order is "default" else order
+    x = self.values['index'].astype('O')
+    y = self.values['X']
+    order = self.frequency if order is "default" else order
 
-    trends = trend(self.y_transformed, order, center)
+    trends = trend(y, order, center)
 
-    plt.plot(self.date_original, trends, **kwargs)
+    plt.plot(x, trends, **kwargs)
     if overlay is True:
-        plt.plot(self.date_original, self.y_transformed, linestyle="dashed")
+        plt.plot(x, y, linestyle="dashed")
         plt.legend(["Trend", "Series"], loc="upper left")
     else:
         pass
@@ -184,11 +163,13 @@ def plot_seasonality(
     """
     Plots series seasonality.
     """
-    order = self.season if order is "default" else order
+    x = self.values['index'].astype('O')
+    y = self.values['X']
+    order = self.frequency if order is "default" else order
 
-    avg_seasonality = seasonality(self.y_transformed, order, center, model, median)
+    avg_seasonality = seasonality(y, order, center, model, median)
 
-    plt.plot(self.date_original, avg_seasonality, **kwargs)
+    plt.plot(x, avg_seasonality, **kwargs)
 
     plt.title(title)
     plt.ylabel(y_lab)
@@ -212,11 +193,13 @@ def plot_random(
     """
     Plots random component of series.
     """
-    order = self.season if order is "default" else order
+    x = self.values['index'].astype('O')
+    y = self.values['X']
+    order = self.frequency if order is "default" else order
 
-    random = remainder(self.y_transformed, order, center, model, median)
+    random = remainder(y, order, center, model, median)
 
-    plt.plot(self.date_original, random, **kwargs)
+    plt.plot(x, random, **kwargs)
 
     plt.title(title)
     plt.ylabel(y_lab)
@@ -240,17 +223,16 @@ def plot_series_decomposition(
     """
     Plots decomposition of series.
     """
-    order = self.season if order is "default" else order
+    x = self.values['index'].astype('O')
+    order = self.frequency if order is "default" else order
 
-    trends = trend(self.y_transformed, order, center)
-    avg_seasonality = seasonality(self.y_transformed, order, center, model, median)
-    random = remainder(self.y_transformed, order, center, model, median)
+    decomposition = self.decompose()
 
     plots = {
-        0: [self.y_transformed, y_lab[0]],
-        1: [trends, y_lab[1]],
-        2: [avg_seasonality, y_lab[2]],
-        3: [random, y_lab[3]],
+        0: [decomposition[:, 0], y_lab[0]],
+        1: [decomposition[:, 1], y_lab[1]],
+        2: [decomposition[:, 2], y_lab[2]],
+        3: [decomposition[:, 3], y_lab[3]],
     }
 
     f, axarr = plt.subplots(len(plots), sharex=True)
@@ -261,7 +243,7 @@ def plot_series_decomposition(
     plt.tight_layout()
 
     for k, v in plots.items():
-        axarr[k].plot(self.date_original, v[0], **kwargs)
+        axarr[k].plot(x, v[0], **kwargs)
         axarr[k].set_ylabel(v[1])
         axarr[k].yaxis.set_ticks_position("right")
         axarr[k].yaxis.set_label_position("left")
@@ -273,18 +255,21 @@ def plot_nan_distribution(
     x_lab="Index",
     y_lab="Y",
     x_rotation=45,
-    vfillcolor="#FADBD8",
+    vfillc="#FADBD8",
     **kwargs
 ):
     """
     Plots distribution of missing values.
     """
-    plt.plot(self.date_original, self.y_original, **kwargs)
+    a = self.values['index'].astype('O')
+    b = self.values['X']
 
-    for x, y in list(zip(self.date_original, self.y_original)):
+    plt.plot(a, b, **kwargs)
+
+    for x, y in list(zip(a, b)):
         if np.isnan(y):
             if np.isnan(y - 1):
-                plt.axvspan(x - 1, x + 1, color=vfillcolor)
+                plt.axvspan(x - timedelta(1), x + timedelta(1), color=vfillc)
             else:
                 continue
 
@@ -295,6 +280,7 @@ def plot_nan_distribution(
     plt.tight_layout()
 
 
+'''
 def plot_imputed_values(
     self,
     title="Imputed Values",
@@ -320,3 +306,4 @@ def plot_imputed_values(
         markevery=markers,
         **kwargs
     )
+'''

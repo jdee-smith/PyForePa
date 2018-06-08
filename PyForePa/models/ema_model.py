@@ -2,19 +2,20 @@ import numpy as np
 
 from scipy import stats
 
-from postprocess import forecast
-from helpers._helpers import boot_sd_residuals
+#from PyForePa.postprocess import forecast
+from PyForePa.helpers.helpers import boot_sd_residuals
+from PyForePa import forecast
 
 
-def sma_model(
-    self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
-    n_samples=500
+def ema_model(
+        self, h=1, ci=True, level=0.95, n_periods=2, bootstrap=False,
+        n_samples=500
 ):
     """
-    Returns a forecast object based on simple moving average
+    Returns a forecast object based on exponential moving average
     forecaster.
     """
-    model = 'sma_model'
+    model = 'ema_model'
     y_train = self.y_transformed
     i = 1
     j = len(y_train)
@@ -24,13 +25,17 @@ def sma_model(
     y_ub = np.empty([0, 1])
     residuals = np.diff(y_train)
 
+    weights = np.exp(np.linspace(-1, 0, n_periods))
+    weights /= np.sum(weights)
+
     if bootstrap is False:
         sd_residuals = np.std(residuals)
     else:
         sd_residuals = boot_sd_residuals(y_train, n_samples)
 
     while j <= k:
-        pred = np.mean(y_train[-(np.absolute(n_periods)):])
+        pred = np.sum(
+            y_train[np.negative(np.absolute(n_periods)):] * weights)
         y_point = np.vstack((y_point, pred))
         if ci is False:
             y_lb = np.vstack((y_lb, np.nan))
