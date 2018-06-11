@@ -69,4 +69,18 @@ def decompose(self, order="default", center=True, model="additive", median=False
 
     decomp_series = np.column_stack((data, trends, avg_seasonality, random))
 
-    return decomp_series
+    dtypes = np.dtype(
+        [
+            ("series", data.dtype),
+            ("trend", trends.dtype),
+            ("seasonality", avg_seasonality.dtype),
+            ("random", random.dtype),
+        ]
+    )
+    decomposition = np.empty(len(decomp_series), dtype=dtypes)
+    decomposition["series"] = decomp_series[:, 0]
+    decomposition["trend"] = decomp_series[:, 1]
+    decomposition["seasonality"] = decomp_series[:, 2]
+    decomposition["random"] = decomp_series[:, 3]
+
+    return decomposition

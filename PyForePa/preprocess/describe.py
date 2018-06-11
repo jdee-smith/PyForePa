@@ -11,9 +11,6 @@ def describe_acf(self, max_lags="default", ci=True, level=0.95):
 
     acf = acf_corr(data, max_lags, ci, level)
 
-    if ci is False:
-        acf = acf[:, 1]
-
     return acf
 
 
@@ -30,8 +27,5 @@ def describe_pacf(self, method="yw_unbiased", max_lags="default", ci=True, level
         pacf = pacf_yule_walker(data, max_lags, "mle", ci, level)
     else:
         pacf = pacf_ols(data, max_lags, ci, level)
-
-    if ci is False:
-        pacf = pacf[:, 1]
 
     return pacf

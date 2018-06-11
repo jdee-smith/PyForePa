@@ -55,7 +55,15 @@ def acf_corr(data, max_lags="default", ci=True, level=0.95):
                 (acf_coeffs, (acf_coeff_lb, acf_coeff, acf_coeff_ub))
             )
 
-    return acf_coeffs
+    dtypes = np.dtype(
+        [("lower", data.dtype), ("point", data.dtype), ("upper", data.dtype)]
+    )
+    coeffs = np.empty(len(acf_coeffs), dtype=dtypes)
+    coeffs["lower"] = acf_coeffs[:, 0]
+    coeffs["point"] = acf_coeffs[:, 1]
+    coeffs["upper"] = acf_coeffs[:, 2]
+
+    return coeffs
 
 
 def pacf_ols(data, max_lags="default", ci=True, level=0.95):
@@ -65,7 +73,6 @@ def pacf_ols(data, max_lags="default", ci=True, level=0.95):
     """
     n = len(data)
     x0 = data
-    # x0 = data[:, ]
 
     if max_lags is "default":
         max_lags = int(10 * np.log10(n))
@@ -92,7 +99,15 @@ def pacf_ols(data, max_lags="default", ci=True, level=0.95):
                 (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
             )
 
-    return pacf_coeffs
+    dtypes = np.dtype(
+        [("lower", data.dtype), ("point", data.dtype), ("upper", data.dtype)]
+    )
+    coeffs = np.empty(len(pacf_coeffs), dtype=dtypes)
+    coeffs["lower"] = pacf_coeffs[:, 0]
+    coeffs["point"] = pacf_coeffs[:, 1]
+    coeffs["upper"] = pacf_coeffs[:, 2]
+
+    return coeffs
 
 
 def yule_walker(data, order, method="unbiased", demean=True):
@@ -155,7 +170,15 @@ def pacf_yule_walker(data, max_lags="default", method="unbiased", ci=True, level
                 (pacf_coeffs, (pacf_coeff_lb, pacf_coeff, pacf_coeff_ub))
             )
 
-    return pacf_coeffs
+    dtypes = np.dtype(
+        [("lower", data.dtype), ("point", data.dtype), ("upper", data.dtype)]
+    )
+    coeffs = np.empty(len(pacf_coeffs), dtype=dtypes)
+    coeffs["lower"] = pacf_coeffs[:, 0]
+    coeffs["point"] = pacf_coeffs[:, 1]
+    coeffs["upper"] = pacf_coeffs[:, 2]
+
+    return coeffs
 
 
 def trend(data, order, center=True):
@@ -209,7 +232,7 @@ def trend(data, order, center=True):
         trends[:pad,] = np.nan
         trends[-pad:,] = np.nan
 
-    return trends
+    return trends[:, 0]
 
 
 def detrend(data, order, center=True, model="additive"):
@@ -219,9 +242,9 @@ def detrend(data, order, center=True, model="additive"):
     k = len(data)
 
     if model == "additive":
-        data_detrended = data.reshape(k, 1) - trend(data, order, center)
+        data_detrended = data - trend(data, order, center)
     elif model == "multiplicative":
-        data_detrended = data.reshape(k, 1) / trend(data, order, center)
+        data_detrended = data / trend(data, order, center)
     else:
         raise ValueError("Model must be additive or multiplicative.")
 
@@ -249,7 +272,7 @@ def seasonality(data, order, center=True, model="additive", median=False):
         arr1 = np.nanmedian(np.resize(de_series, (k, order)), axis=0)
         arr2 = np.resize(arr1, (j, 1))
 
-    return arr2
+    return arr2[:, 0]
 
 
 def remainder(data, order, center=True, model="additive", median=False):
@@ -261,9 +284,9 @@ def remainder(data, order, center=True, model="additive", median=False):
     avg_seasonality = seasonality(data, order, center, model, median)
 
     if model == "additive":
-        remainder = data.reshape(k, 1) - trends - avg_seasonality
+        remainder = data - trends - avg_seasonality
     elif model == "multiplicative":
-        remainder = data.reshape(k, 1) / (trends * avg_seasonality)
+        remainder = data / (trends * avg_seasonality)
     else:
         raise ValueError("Model must be additive or multiplicative.")
 

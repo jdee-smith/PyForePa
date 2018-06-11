@@ -1,7 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from datetime import timedelta
+from dateutil.relativedelta import relativedelta
+
 
 from PyForePa.helpers.helpers import (
     acf_corr,
@@ -15,12 +16,22 @@ from PyForePa.helpers.helpers import (
 
 
 def plot_series(
-    self, title="Series", x_lab="Index", y_lab="Y", x_rotation=45, **kwargs
+    self,
+    title="Series",
+    x_lab="Index",
+    y_lab="Y",
+    time_index=True,
+    x_rotation=45,
+    **kwargs
 ):
     """
     Plots series.
     """
-    x = self.values["index"].astype("O")
+    if time_index is True:
+        x = self.values["index"].astype("O")
+    else:
+        x = np.arange(len(self.values["index"]))
+
     y = self.values["X"]
 
     plt.plot(x, y, **kwargs)
@@ -46,14 +57,14 @@ def plot_acf(
     """
     data = self.values["X"]
     res = acf_corr(data, max_lags, ci=True, level=level)
-    coeffs = res[:, 1]
-    coeffs_lb = res[0][0]
-    coeffs_ub = res[0][2]
-    x = np.arange(len(coeffs))
+    point = res["point"]
+    lower = res["lower"]
+    upper = res["upper"]
+    x = np.arange(len(point))
 
-    plt.stem(x, coeffs, **kwargs)
+    plt.stem(x, point, **kwargs)
     plt.hlines(
-        (coeffs_lb, coeffs_ub),
+        (lower, upper),
         xmin=x[0],
         xmax=x[-1],
         linestyles=kwargs.pop("linestyles", "dotted"),
@@ -88,14 +99,14 @@ def plot_pacf(
     else:
         res = pacf_ols(data, max_lags, ci=True, level=level)
 
-    coeffs = res[:, 1]
-    coeffs_lb = res[0][0]
-    coeffs_ub = res[0][2]
-    x = np.arange(1, len(coeffs) + 1, 1)
+    point = res["point"]
+    lower = res["lower"]
+    upper = res["upper"]
+    x = np.arange(1, len(point) + 1, 1)
 
-    plt.stem(x, coeffs, **kwargs)
+    plt.stem(x, point, **kwargs)
     plt.hlines(
-        (coeffs_lb, coeffs_ub),
+        (lower, upper),
         xmin=x[0],
         xmax=x[-1],
         linestyles=kwargs.pop("linestyles", "dotted"),
@@ -116,14 +127,15 @@ def plot_trend(
     x_lab="Index",
     y_lab="Y",
     overlay=False,
+    time_index=True,
     x_rotation=45,
     **kwargs
 ):
     """
     Plots series trend.
     """
-    x = self.values["index"].astype("O")
     y = self.values["X"]
+    x = self.values["index"].astype("O") if time_index else np.arange(len(y))
     order = self.frequency if order is "default" else order
 
     trends = trend(y, order, center)
@@ -151,14 +163,15 @@ def plot_seasonality(
     title="Seasonality",
     x_lab="Index",
     y_lab="Y",
+    time_index=True,
     x_rotation=45,
     **kwargs
 ):
     """
     Plots series seasonality.
     """
-    x = self.values["index"].astype("O")
     y = self.values["X"]
+    x = self.values["index"].astype("O") if time_index else np.arange(len(y))
     order = self.frequency if order is "default" else order
 
     avg_seasonality = seasonality(y, order, center, model, median)
@@ -211,22 +224,24 @@ def plot_series_decomposition(
     title="Decomposed Series",
     x_lab="Index",
     y_lab=["Series", "Trend", "Seasonality", "Random"],
+    time_index=True,
     x_rotation=45,
     **kwargs
 ):
     """
     Plots decomposition of series.
     """
-    x = self.values["index"].astype("O")
+    y = self.values["X"]
+    x = self.values["index"].astype("O") if time_index else np.arange(len(y))
     order = self.frequency if order is "default" else order
 
     decomposition = self.decompose()
 
     plots = {
-        0: [decomposition[:, 0], y_lab[0]],
-        1: [decomposition[:, 1], y_lab[1]],
-        2: [decomposition[:, 2], y_lab[2]],
-        3: [decomposition[:, 3], y_lab[3]],
+        0: [decomposition["series"], y_lab[0]],
+        1: [decomposition["trend"], y_lab[1]],
+        2: [decomposition["seasonality"], y_lab[2]],
+        3: [decomposition["random"], y_lab[3]],
     }
 
     f, axarr = plt.subplots(len(plots), sharex=True)
@@ -248,6 +263,7 @@ def plot_nan_distribution(
     title="Distribution of nans",
     x_lab="Index",
     y_lab="Y",
+    time_index=True,
     x_rotation=45,
     vfillc="#FADBD8",
     **kwargs
@@ -255,15 +271,31 @@ def plot_nan_distribution(
     """
     Plots distribution of missing values.
     """
-    a = self.values["index"].astype("O")
     b = self.values["X"]
+    a = self.values["index"].astype("O") if time_index else np.arange(len(b))
 
     plt.plot(a, b, **kwargs)
 
-    for x, y in list(zip(a, b)):
-        if np.isnan(y):
-            if np.isnan(y - 1):
-                plt.axvspan(x - timedelta(1), x + timedelta(1), color=vfillc)
+    if time_index is True:
+        for x, y in list(zip(a, b)):
+            if np.isnan(y):
+                if np.isnan(y - 1):
+                    plt.axvspan(
+                        x - relativedelta(months=1),
+                        x + relativedelta(months=1),
+                        color=vfillc,
+                    )
+                else:
+                    continue
+            else:
+                continue
+    else:
+        for x, y in list(zip(a, b)):
+            if np.isnan(y):
+                if np.isnan(y - 1):
+                    plt.axvspan(x - 1, x + 1, color=vfillc)
+                else:
+                    continue
             else:
                 continue
 
