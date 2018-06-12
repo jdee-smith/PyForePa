@@ -121,16 +121,40 @@ class forecast:
         accuracy_mmr
     )
 
+    from PyForePa.postprocess.plot import (
+        plot_forecast
+    )
+
 
 class model(tseries):
     def __init__(self, values, frequency):
         tseries.__init__(self, values, frequency)
         super(model, self).__init__()
 
-    from PyForePa.models.mean_model import mean_model
-    from PyForePa.models.random_model import random_model
-    from PyForePa.models.naive_model import naive_model
-    from PyForePa.models.drift_model import drift_model
-    from PyForePa.models.sma_model import sma_model
-    from PyForePa.models.ema_model import ema_model
-    from PyForePa.models.wma_model import wma_model
+    from PyForePa.models.mean_model import (
+        mean_model
+    )
+
+    from PyForePa.models.random_model import (
+        random_model
+    )
+
+    from PyForePa.models.naive_model import (
+        naive_model
+    )
+
+    from PyForePa.models.drift_model import (
+        drift_model
+    )
+
+    from PyForePa.models.sma_model import (
+        sma_model
+    )
+
+    from PyForePa.models.ema_model import (
+        ema_model
+    )
+
+    from PyForePa.models.wma_model import (
+        wma_model
+    )
