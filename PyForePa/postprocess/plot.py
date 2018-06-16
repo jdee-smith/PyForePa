@@ -42,9 +42,9 @@ def plot_forecast(
 
     if add_series is True and vline is True:
         if time_index is True:
-            plt.axvline(x=series_end.astype("O"), linestyle='dotted')
+            plt.axvline(x=series_end.astype("O"), linestyle="dotted")
         else:
-            plt.axvline(x=series_len, linestyle='dotted')
+            plt.axvline(x=series_len, linestyle="dotted")
 
     plt.title(title)
     plt.ylabel(y_lab)

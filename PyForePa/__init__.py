@@ -11,36 +11,7 @@ class tseries(object):
         self.values['index'] = index
         self.values['X'] = X
         self.frequency = frequency
-    '''
-    @property
-    def X(self):
-        return self.__X
 
-    @X.setter
-    def X(self, v):
-        """
-        Validate X.
-        """
-        if v is not None and type(v) is not np.ndarray:
-            raise ValueError("Series should be a numpy array or ndarray.")
-        else:
-            self.__X = v
-
-        if v is not None:
-            multi = isinstance(v[0], np.ndarray)
-            if multi is True:
-                if v.shape[1] != len(self.index):
-                    raise ValueError("Length of X and index should match.")
-                else:
-                    self.__X = v
-            if multi is False:
-                if v.shape[0] != len(self.index):
-                    raise ValueError("Length of X and index should match.")
-                else:
-                    self.__X = v
-            else:
-                pass
-    '''
     @property
     def frequency(self):
         return self.__frequency
@@ -126,35 +97,106 @@ class forecast:
     )
 
 
-class model(tseries):
-    def __init__(self, values, frequency):
-        tseries.__init__(self, values, frequency)
-        super(model, self).__init__()
-
-    from PyForePa.models.mean_model import (
-        mean_model
-    )
-
-    from PyForePa.models.random_model import (
-        random_model
-    )
-
-    from PyForePa.models.naive_model import (
-        naive_model
-    )
+class drift_model(object):
+    def __init__(self, tseries):
+        super(drift_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
 
     from PyForePa.models.drift_model import (
-        drift_model
+        forecast
     )
 
-    from PyForePa.models.sma_model import (
-        sma_model
-    )
+
+class ema_model(object):
+    def __init__(self, tseries):
+        super(ema_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
 
     from PyForePa.models.ema_model import (
-        ema_model
+        forecast
     )
 
+
+class mean_model(object):
+    def __init__(self, tseries):
+        super(mean_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
+
+    from PyForePa.models.mean_model import (
+        forecast
+    )
+
+
+class naive_model(object):
+    def __init__(self, tseries):
+        super(naive_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
+
+    from PyForePa.models.naive_model import (
+        forecast
+    )
+
+
+class random_model(object):
+    def __init__(self, tseries):
+        super(random_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
+
+    from PyForePa.models.random_model import (
+        forecast
+    )
+
+
+class sma_model(object):
+    def __init__(self, tseries):
+        super(sma_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
+
+    from PyForePa.models.sma_model import (
+        forecast
+    )
+
+
+class wma_model(object):
+    def __init__(self, tseries):
+        super(wma_model, self).__init__()
+        dtypes = np.dtype(
+            [("index", tseries.values["index"].dtype), ("X", tseries.values["X"].dtype)])
+        self.values = np.empty(len(tseries.values["index"]), dtype=dtypes)
+        self.values["index"] = tseries.values["index"]
+        self.values["X"] = tseries.values["X"]
+        self.frequency = tseries.frequency
+
     from PyForePa.models.wma_model import (
-        wma_model
+        forecast
     )

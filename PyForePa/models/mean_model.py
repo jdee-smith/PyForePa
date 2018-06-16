@@ -2,17 +2,16 @@ import numpy as np
 
 from scipy import stats
 
-#from PyForePa.postprocess import forecast
-from PyForePa import forecast
+from PyForePa import forecast as fore_obj
 from PyForePa.helpers.helpers import boot_sd_residuals
 
 
-def mean_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
+def forecast(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
     """
     Returns a forecast object based on mean forecaster.
     """
-    model = 'mean_model'
-    y_train = self.y_transformed
+    model = "mean_model"
+    y_train = self.values["X"]
     i = 1
     j = len(y_train)
     k = j + (h - 1)
@@ -43,17 +42,29 @@ def mean_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=500):
         i += 1
         j += 1
 
+    dtypes = np.dtype(
+        [("lower", y_lb.dtype), ("point", y_point.dtype), ("upper", y_ub.dtype)]
+    )
+
+    forecasts = np.empty(len(y_point), dtype=dtypes)
+    forecasts["lower"] = y_lb.reshape(len(y_lb))
+    forecasts["point"] = y_point.reshape(len(y_point))
+    forecasts["upper"] = y_ub.reshape(len(y_ub))
+
     model_info = np.array(
         [(model, ci, level, h, bootstrap, n_samples)],
         dtype=[
-            ('model', 'S20'), ('ci', 'S10'), ('level', np.float64),
-            ('h', np.int8), ('bootstrap', 'S10'), ('n_samples', np.float64)
-        ]
+            ("model", "S20"),
+            ("ci", "S10"),
+            ("level", np.float64),
+            ("h", np.int8),
+            ("bootstrap", "S10"),
+            ("n_samples", np.float64),
+        ],
     )
 
-    forecast_obj = forecast(
-        model_info, y_point, y_lb, y_ub, residuals, self.y_original,
-        self.date_original, self.season, self.y_transformed
-    )
+    series_info = np.array([(self.frequency)], dtype=[("frequency", np.float64)])
+
+    forecast_obj = fore_obj(model_info, forecasts, self.values, series_info)
 
     return forecast_obj

@@ -2,11 +2,11 @@ import numpy as np
 
 from scipy import stats
 
-from PyForePa import forecast
+from PyForePa import forecast as fore_obj
 from PyForePa.helpers.helpers import boot_sd_residuals
 
 
-def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None):
+def forecast(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None):
     """
     Returns a forecast object based on drift forecaster.
     """
@@ -66,6 +66,6 @@ def drift_model(self, h=1, ci=True, level=0.95, bootstrap=False, n_samples=None)
 
     series_info = np.array([(self.frequency)], dtype=[("frequency", np.float64)])
 
-    forecast_obj = forecast(model_info, forecasts, self.values, series_info)
+    forecast_obj = fore_obj(model_info, forecasts, self.values, series_info)
 
     return forecast_obj
